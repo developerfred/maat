@@ -2,6 +2,7 @@ const std = @import("std");
 const cdp = @import("cdp");
 const options = @import("options");
 const helpers = @import("helpers");
+const context = @import("context");
 
 /// Result of browser launch.
 pub const Browser = struct {
@@ -66,6 +67,19 @@ pub const Browser = struct {
         return page.Page{
             .allocator = self.allocator,
             .cdp_client = self.cdp_client,
+        };
+    }
+
+    /// Create an isolated browser context (cookies, localStorage, sessionStorage).
+    pub fn newContext(self: *Browser) !context.BrowserContext {
+        const context_id = try self.allocator.dupe(u8, "context-" ++ std.fmt.allocPrint(self.allocator, "{d}", .{self.debug_port}) catch "0");
+        defer self.allocator.free(context_id);
+
+        return context.BrowserContext{
+            .allocator = self.allocator,
+            .name = self.name,
+            .cdp_client = self.cdp_client,
+            .context_id = context_id,
         };
     }
 
