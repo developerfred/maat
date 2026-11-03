@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Zig
+      - name: Install Zig ${{ matrix.zig-version }}
         uses: goto-bus-stop/setup-zig@v2
         with:
           version: ${{ matrix.zig-version }}
@@ -26,7 +26,7 @@ jobs:
         run: zig version
 
       - name: Format check
-        run: zig fmt --check src/
+        run: zig fmt --check src/ examples/
 
       - name: Build library and executable
         run: zig build
@@ -34,12 +34,18 @@ jobs:
       - name: Run tests
         run: zig build test
 
-      - name: Run example (skip if no browser)
+      - name: Run memory tests
+        run: zig build memory-test
+
+      - name: Run graph example
+        run: zig build graph-example
+
+      - name: Run full example (skip if no browser)
         run: |
           if command -v chromium-browser >/dev/null 2>&1 || command -v google-chrome >/dev/null 2>&1 || command -v chromium >/dev/null 2>&1; then
-            zig build run
+            zig build full-example
           else
-            echo "No Chromium found, skipping run example"
+            echo "No Chromium found, skipping full example"
           fi
 
   build-compat:
@@ -68,7 +74,10 @@ jobs:
         run: zig version
 
       - name: Build (compatibility check)
-        run: zig build 2>&1 || echo "Build failed on Zig ${{ matrix.zig-version}} - may need build_compat update"
+        run: zig build
+
+      - name: Run tests (compatibility check)
+        run: zig build test
 
   pages:
     runs-on: ubuntu-latest
