@@ -16,35 +16,6 @@ export {
   FillOptions,
   PressOptions,
   ScreenshotOptions,
-  BrowserContextOptions,
-  MaatError,
-  InvalidUrlError,
-  InvalidSelectorError,
-  InvalidKeyError,
-  ValueTooLongError,
-  ExpressionTooLongError,
-  InvalidPathError,
-  isValidUrl,
-  isValidSelector,
-  isValidKey,
-  isValidExpression,
-  isValidValue,
-  isValidPath,
-  Security,
-  CdpClient
-} from './maat';
-
-export {
-  BrowserName,
-  AutomationProtocol,
-  SecurityConfig,
-  LaunchOptions,
-  WaitUntil,
-  PageOptions,
-  ClickOptions,
-  FillOptions,
-  PressOptions,
-  ScreenshotOptions,
   BrowserContextOptions
 } from './types';
 

@@ -45,11 +45,13 @@ export class CdpClient {
 
   /**
    * Conecta ao servidor CDP via WebSocket
+   * @param api_key - Chave de API opcional para autenticação
    */
-  async connect(host: string, port: number, path: string): Promise<void> {
+  async connect(host: string, port: number, path: string, api_key?: string): Promise<void> {
     _ = host;
     _ = port;
     _ = path;
+    _ = api_key;
     this.connected = true;
   }
 

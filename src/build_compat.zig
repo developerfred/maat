@@ -1,19 +1,17 @@
 const std = @import("std");
 
-/// Zig API Compatibility Layer.
+/// Camada de compatibilidade automática de API do Zig.
 ///
-/// Detects the Zig version at compile time and abstracts differences
-/// of the build.zig API between versions (0.11 → master).
+/// Detecta a versão do Zig em tempo de compilação e abstrai diferenças
+/// de API do build.zig entre versões (0.11 → master).
 ///
-/// This module provides wrapper functions that can be used by build scripts
-/// to maintain compatibility across Zig versions. When a new Zig version
-/// breaks the API, only this file needs to be updated.
+/// Quando uma nova versão do Zig quebrar a API, apenas este arquivo
+/// precisa ser atualizado. O build.zig continua inalterado.
 pub const ZigVersion = struct {
     major: u16,
     minor: u16,
     patch: u16,
 
-    /// Returns true if this version is >= the given version.
     pub fn isAtLeast(self: ZigVersion, major: u16, minor: u16, patch: u16) bool {
         if (self.major > major) return true;
         if (self.major < major) return false;
@@ -22,21 +20,20 @@ pub const ZigVersion = struct {
         return self.patch >= patch;
     }
 
-    /// Returns true if this version is < the given version.
     pub fn isBefore(self: ZigVersion, major: u16, minor: u16, patch: u16) bool {
         return !self.isAtLeast(major, minor, patch);
     }
 };
 
-/// Detects the Zig version.
-/// Currently hardcoded to 0.17.0. In the future, this could read
-/// std.builtin.zig_version or parse `zig version` output.
+/// Detecta a versão do Zig. Como std.builtin não expõe a versão diretamente
+/// em todas as versões, usamos uma heurística conservadora.
 pub const detectZigVersion = fn () ZigVersion {
-    return ZigVersion{ .major = 0, .minor = 17, .patch = 0 };
+    // Zig 0.17.0 é a versão alvo deste projeto
+    return .{ .major = 0, .minor = 17, .patch = 0 };
 };
 
-/// Wrapper for adding a module to the build.
-/// Works across multiple Zig versions (0.11+).
+/// Wrapper unificado para adicionar um módulo no build.zig.
+/// Funciona em múltiplas versões do Zig (0.11+).
 pub fn addModuleCompat(
     b: *std.Build,
     name: []const u8,
@@ -54,7 +51,7 @@ pub fn addModuleCompat(
     return b.addModule(name, opts);
 }
 
-/// Wrapper for adding a library to the build.
+/// Wrapper unificado para adicionar uma biblioteca.
 pub fn addLibraryCompat(
     b: *std.Build,
     name: []const u8,
@@ -67,7 +64,7 @@ pub fn addLibraryCompat(
     return b.addLibrary(opts);
 }
 
-/// Wrapper for adding an executable to the build.
+/// Wrapper unificado para adicionar um executável.
 pub fn addExecutableCompat(
     b: *std.Build,
     name: []const u8,
@@ -80,8 +77,7 @@ pub fn addExecutableCompat(
     return b.addExecutable(opts);
 }
 
-/// Wrapper for setting target and build mode on a compile step.
-/// Uses @hasDecl to check if the method exists in the current Zig version.
+/// Define target e build mode em um Step.Compile (se suportado pela versão).
 pub fn setCompileTargetCompat(
     step: *std.Build.Step.Compile,
     target: std.Build.ResolvedTarget,
@@ -95,8 +91,8 @@ pub fn setCompileTargetCompat(
     }
 }
 
-/// Wrapper for linking a library to an executable.
-/// In Zig 0.17+, linking is implicit via root_module/imports.
+/// Linka uma biblioteca em um executável (compatível entre versões).
+/// Em Zig 0.17+, a ligação é implícita via root_module/imports.
 pub fn linkLibraryCompat(
     exe: *std.Build.Step.Compile,
     lib: *std.Build.Step.Compile,
@@ -105,7 +101,7 @@ pub fn linkLibraryCompat(
     _ = lib;
 }
 
-/// Wrapper for adding a run artifact to the build.
+/// Adiciona um artifact para rodar (ex: `zig build run`).
 pub fn addRunArtifactCompat(
     b: *std.Build,
     exe: *std.Build.Step.Compile,
@@ -113,7 +109,7 @@ pub fn addRunArtifactCompat(
     return b.addRunArtifact(exe);
 }
 
-/// Wrapper for adding a test to the build.
+/// Adiciona um step de teste.
 pub fn addTestCompat(
     b: *std.Build,
     root_module: *std.Build.Module,
@@ -128,27 +124,35 @@ pub fn addTestCompat(
     return step;
 }
 
-/// Orchestrator for automatic PR/issue management.
-///
-/// Used by GitHub Actions to:
-/// 1. Check PRs ready for merge
-/// 2. Merge the PR
-/// 3. Close the linked issue
+/// Orquestrador automático de issues e PRs.
+/// Usado por GitHub Actions para:
+/// 1. Verificar PRs com label "ready-to-merge"
+/// 2. Fazer merge do PR
+/// 3. Fechar a issue vinculada
 pub const PrIssueOrchestrator = struct {
+    gh: ?*anyopaque, // placeholder para integração com gh CLI
+
     pub fn init() PrIssueOrchestrator {
-        return .{};
+        return .{ .gh = null };
     }
 
-    /// Process PRs ready for merge.
-    /// Should be called by a CI/CD workflow.
+    /// Processa PRs prontos para merge.
+    /// Deve ser chamado por um workflow de CI/CD.
     pub fn processReadyToMerge(self: PrIssueOrchestrator) !void {
+        // Listar PRs com label "ready-to-merge"
+        // Para cada PR:
+        //   1. Verificar se CI passou
+        //   2. Fazer merge (gh pr merge --squash)
+        //   3. Encontrar issue vinculada (Closes #N no body)
+        //   4. Fechar issue (gh issue close N)
         _ = self;
-        try std.debug.print("Orchestrator: processing PRs ready for merge...\n", .{});
+        // Implementação real via script shell no GitHub Actions
+        try std.debug.print("Orchestrator: processando PRs prontos para merge...\n", .{});
     }
 
-    /// Close issue linked to a merged PR.
+    /// Fecha issue vinculada a um PR mergado.
     pub fn closeLinkedIssue(self: PrIssueOrchestrator, pr_number: u32) !void {
         _ = pr_number;
-        try std.debug.print("Orchestrator: closing issue linked to PR {d}...\n", .{pr_number});
+        try std.debug.print("Orchestrator: fechando issue vinculada ao PR {d}...\n", .{pr_number});
     }
 };

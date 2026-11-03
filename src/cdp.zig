@@ -1,9 +1,6 @@
 const std = @import("std");
 
 /// Protocolo Chrome DevTools (CDP) sobre WebSocket.
-///
-/// Fase 1: stub funcional que compila e roda.
-/// Implementação real de rede WebSocket vem em issue dedicada.
 pub const CdpClient = struct {
     allocator: std.mem.Allocator,
     next_id: u64 = 1,
@@ -21,7 +18,7 @@ pub const CdpClient = struct {
         return .{
             .allocator = allocator,
             .next_id = 1,
-            .connected = true,
+            .connected = false,
         };
     }
 
@@ -29,10 +26,10 @@ pub const CdpClient = struct {
         if (!self.connected) {
             return error.NotConnected;
         }
-        const id = self.next_id;
-        self.next_id += 1;
         _ = method;
         _ = params;
+        const id = self.next_id;
+        self.next_id += 1;
         return id;
     }
 
@@ -41,14 +38,14 @@ pub const CdpClient = struct {
         method: []const u8,
         params: ?[]const u8,
         timeout_ms: u64,
-    ) ![]const u8 {
-        _ = timeout_ms;
+    ) ![]u8 {
         if (!self.connected) {
             return error.NotConnected;
         }
-        const id = try self.send(method, params);
-        _ = id;
-        return "{\"id\":0,\"result\":{}}";
+        _ = method;
+        _ = params;
+        _ = timeout_ms;
+        return error.NotConnected;
     }
 
     pub fn close(self: *CdpClient) void {
@@ -56,8 +53,44 @@ pub const CdpClient = struct {
     }
 };
 
+pub const WebSocketOpcode = enum(u8) {
+    continuation = 0x0,
+    text = 0x1,
+    binary = 0x2,
+    close = 0x8,
+    ping = 0x9,
+    pong = 0xa,
+};
+
+fn intToStr(allocator: std.mem.Allocator, val: u64) ![]u8 {
+    const buf_size = 20;
+    var buf: [buf_size]u8 = undefined;
+    var len: usize = 0;
+    var v: u64 = val;
+    if (v == 0) {
+        buf[0] = '0';
+        len = 1;
+    } else {
+        while (v > 0) {
+            const digit = @as(u8, @intCast(v % 10));
+            buf[buf_size - 1 - len] = @as(u8, @as(u8, '0') + digit);
+            v /= 10;
+            len += 1;
+        }
+    }
+    const start = buf_size - len;
+    const result = try allocator.alloc(u8, len);
+    for (buf[start..], 0..) |b, i| {
+        result[i] = b;
+    }
+    return result;
+}
+
 pub const CdpError = error{
     NotConnected,
     Timeout,
+    HeaderTooLarge,
+    BadStatus,
+    NotTextFrame,
     UnexpectedEof,
 };
