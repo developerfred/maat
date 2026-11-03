@@ -15,7 +15,7 @@ pub const Browser = struct {
     pub fn launch(allocator: std.mem.Allocator, opts: options.LaunchOptions) !Browser {
         const debug_port = try helpers.findFreePort();
         _ = if (opts.protocol == .cdp) .cdp else options.defaultProtocolFor(opts.name);
-        _ = helpers.resolveExecutable(opts) catch "google-chrome";
+        _ = try helpers.resolveExecutable(opts);
 
         var args = try std.ArrayList([]const u8).initCapacity(allocator, 8);
         defer args.deinit(allocator);
