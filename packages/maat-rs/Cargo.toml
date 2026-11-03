@@ -1,0 +1,33 @@
+[package]
+name = "maat-rs"
+version = "0.1.0"
+edition = "2021"
+description = "Maat - Playwright-like browser automation in Rust with sandbox enabled by default"
+authors = ["Maat Team"]
+license = "MIT"
+repository = "https://github.com/developerfred/maat.git"
+keywords = ["maat", "playwright", "browser-automation", "zig", "sandbox", "security", "testing"]
+
+[dependencies]
+# Serialização
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Async / runtime
+tokio = { version = "1", features = ["full"] }
+
+# WebSocket (comunicação com o servidor Maat)
+tokio-tungstenite = "0.21"
+url = "2"
+
+# HTTP (fallback / health-check)
+reqwest = { version = "0.11", default-features = false, features = ["json"] }
+
+# Erros tipificados
+thiserror = "1"
+
+# Logging opcional
+log = "0.4"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

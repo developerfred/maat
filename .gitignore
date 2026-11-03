@@ -1,20 +1,6 @@
-# Zig build cache
+target/
+Cargo.lock
 .zig-cache/
 zig-out/
-zig-cache/
-
-# Dependências
-zig.modules/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
+__pycache__/
+*.pyc

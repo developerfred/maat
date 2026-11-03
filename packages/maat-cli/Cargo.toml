@@ -1,0 +1,16 @@
+[package]
+name = "maat-cli"
+version = "0.1.0"
+edition = "2021"
+description = "Maat CLI - linha de comando para automação de navegador (Playwright-like)"
+authors = ["Maat Team"]
+license = "MIT"
+repository = "https://github.com/developerfred/maat.git"
+keywords = ["maat", "playwright", "browser-automation", "cli", "zig", "sandbox"]
+
+[dependencies]
+maat-rs = { path = "../maat-rs" }
+clap = { version = "4", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
