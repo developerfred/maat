@@ -27,15 +27,14 @@ pub const LaunchOptions = struct {
     executable_path: []const u8 = "",
 };
 
-/// Get sandbox flag from launch options.
-fn isSandboxEnabled(opts: LaunchOptions) bool {
-    return opts.security.sandbox;
-}
+/// Wait until options for navigation.
+pub const WaitUntil = enum {
+    load,
+    domcontentloaded,
+    networkidle,
+};
 
-/// Factory for launching browsers.
-///
-/// Single entry point for all browsers. Selects implementation based on
-/// BrowserName and AutomationProtocol. Easy to extend with new browsers.
+/// Result of browser launch.
 pub const Browser = struct {
     allocator: std.mem.Allocator,
     name: BrowserName,
@@ -69,8 +68,7 @@ pub const Browser = struct {
         const argv = try args.toOwnedSlice(allocator);
         defer allocator.free(argv);
 
-        // Fase 4: Launch browser process (stub - real spawn in later issue)
-        // const child = try std.process.spawn(.{ .program = .{ .executable = exe }, .argv = argv }, .{});
+        // Fase 4+: Launch browser process (stub - real spawn in later issue)
         const child: ?std.process.Child = null;
 
         // Wait for debug port (stub)
@@ -93,7 +91,6 @@ pub const Browser = struct {
         defer self.allocator.free(params);
 
         const resp = try self.cdp_client.call("Target.createTarget", params, 10_000);
-        // resp is static, do not free
         _ = resp;
 
         return Page{
@@ -104,7 +101,6 @@ pub const Browser = struct {
 
     pub fn close(self: *Browser) void {
         self.cdp_client.close();
-        // Fase 4: process kill/wait stub (child is null in stub)
         _ = self.process;
     }
 };
@@ -113,18 +109,71 @@ pub const Page = struct {
     allocator: std.mem.Allocator,
     cdp_client: cdp.CdpClient,
 
-    pub fn goto(self: *Page, url: []const u8) !void {
+    pub fn goto(self: *Page, url: []const u8, wait_until: WaitUntil) !void {
+        const wait_str = switch (wait_until) {
+            .load => "load",
+            .domcontentloaded => "domcontentloaded",
+            .networkidle => "networkidle",
+        };
         const prefix: []const u8 = "{\"url\":\"";
-        const mid: []const u8 = "\",\"frameId\":\"\",\"waitUntil\":\"load\"}";
-        const total = prefix.len + url.len + mid.len;
+        const mid1: []const u8 = "\",\"frameId\":\"\",\"waitUntil\":\"";
+        const mid2: []const u8 = "\"}";
+        const total = prefix.len + url.len + mid1.len + wait_str.len + mid2.len;
         const params = try self.allocator.alloc(u8, total);
         defer self.allocator.free(params);
         var written: usize = 0;
         for (prefix) |b| { params[written] = b; written += 1; }
         for (url) |b| { params[written] = b; written += 1; }
-        for (mid) |b| { params[written] = b; written += 1; }
+        for (mid1) |b| { params[written] = b; written += 1; }
+        for (wait_str) |b| { params[written] = b; written += 1; }
+        for (mid2) |b| { params[written] = b; written += 1; }
 
         _ = try self.cdp_client.call("Page.navigate", params, 30_000);
+    }
+
+    pub fn click(self: *Page, selector: []const u8) !void {
+        const prefix: []const u8 = "{\"selector\":\"";
+        const suffix: []const u8 = "\"}";
+        const total = prefix.len + selector.len + suffix.len;
+        const params = try self.allocator.alloc(u8, total);
+        defer self.allocator.free(params);
+        var written: usize = 0;
+        for (prefix) |b| { params[written] = b; written += 1; }
+        for (selector) |b| { params[written] = b; written += 1; }
+        for (suffix) |b| { params[written] = b; written += 1; }
+
+        _ = try self.cdp_client.call("DOM.click", params, 10_000);
+    }
+
+    pub fn fill(self: *Page, selector: []const u8, value: []const u8) !void {
+        const prefix: []const u8 = "{\"selector\":\"";
+        const mid: []const u8 = "\",\"value\":\"";
+        const suffix: []const u8 = "\"}";
+        const total = prefix.len + selector.len + mid.len + value.len + suffix.len;
+        const params = try self.allocator.alloc(u8, total);
+        defer self.allocator.free(params);
+        var written: usize = 0;
+        for (prefix) |b| { params[written] = b; written += 1; }
+        for (selector) |b| { params[written] = b; written += 1; }
+        for (mid) |b| { params[written] = b; written += 1; }
+        for (value) |b| { params[written] = b; written += 1; }
+        for (suffix) |b| { params[written] = b; written += 1; }
+
+        _ = try self.cdp_client.call("DOM.fill", params, 10_000);
+    }
+
+    pub fn press(self: *Page, key: []const u8) !void {
+        const prefix: []const u8 = "{\"key\":\"";
+        const suffix: []const u8 = "\"}";
+        const total = prefix.len + key.len + suffix.len;
+        const params = try self.allocator.alloc(u8, total);
+        defer self.allocator.free(params);
+        var written: usize = 0;
+        for (prefix) |b| { params[written] = b; written += 1; }
+        for (key) |b| { params[written] = b; written += 1; }
+        for (suffix) |b| { params[written] = b; written += 1; }
+
+        _ = try self.cdp_client.call("DOM.pressKey", params, 10_000);
     }
 
     pub fn title(self: *Page) ![]u8 {
@@ -173,18 +222,20 @@ fn defaultProtocolFor(name: BrowserName) AutomationProtocol {
     }
 }
 
-/// WebKit/Safari specific launch notes:
-/// - On macOS, Safari executable is at /Applications/Safari.app/Contents/MacOS/Safari
-/// - Requires Safari's Remote WebDriver to be enabled in Develop menu
-/// - Sandbox is managed by macOS App Sandbox, enabled by default
+/// Security configuration for browser launch.
 pub const WebKitNotes = struct {
+    /// On macOS, Safari executable is at this path
     pub const macos_executable_path: []const u8 = "/Applications/Safari.app/Contents/MacOS/Safari";
 };
+
+fn isSandboxEnabled(opts: LaunchOptions) bool {
+    return opts.security.sandbox;
+}
 
 fn waitForDebugPort(port: u16, timeout_ms: u64) !void {
     _ = port;
     _ = timeout_ms;
-    // Fase 4: stub - real port polling in later issue
+    // Fase 4+: stub - real port polling in later issue
     return;
 }
 
