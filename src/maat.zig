@@ -43,8 +43,12 @@ pub const isWebKitAvailable = webkit.isWebKitAvailable;
 pub const Firefox = firefox.Firefox;
 pub const isFirefoxAvailable = firefox.isFirefoxAvailable;
 
+// Re-export page validation
+pub const isValidUrl = page.isValidUrl;
+
 // Error union for the public API.
 pub const MaatError = error{
     Timeout,
     AllocFailed,
+    InvalidUrl,
 };

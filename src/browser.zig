@@ -37,6 +37,7 @@ pub const Browser = struct {
         const argv = try args.toOwnedSlice(allocator);
         defer allocator.free(argv);
 
+        // Connect via CDP WebSocket (stub implementation)
         const cdp_client = try cdp.CdpClient.connect(allocator, "127.0.0.1", debug_port, "/");
 
         return .{
@@ -47,6 +48,7 @@ pub const Browser = struct {
         };
     }
 
+    /// Create a new page/tab in this browser.
     pub fn newPage(self: *Browser) !page.Page {
         const params = try self.allocator.dupe(u8, "{\"url\":\"about:blank\"}");
         defer self.allocator.free(params);
@@ -60,6 +62,7 @@ pub const Browser = struct {
         };
     }
 
+    /// Create an isolated browser context (cookies, localStorage, sessionStorage).
     pub fn newContext(self: *Browser) !context.BrowserContext {
         const context_id = try self.allocator.dupe(u8, "context-" ++ std.fmt.allocPrint(self.allocator, "{d}", .{self.debug_port}) catch "0");
         defer self.allocator.free(context_id);
@@ -72,6 +75,7 @@ pub const Browser = struct {
         };
     }
 
+    /// Close the browser and cleanup.
     pub fn close(self: *Browser) void {
         self.cdp_client.close();
     }

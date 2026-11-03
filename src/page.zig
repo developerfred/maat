@@ -2,12 +2,33 @@ const std = @import("std");
 const cdp = @import("cdp");
 const options = @import("options");
 
+/// Validates a URL to prevent injection attacks.
+/// Only allows http:// and https:// schemes.
+pub fn isValidUrl(url: []const u8) bool {
+    if (url.len < 8) return false;
+    if (!std.mem.eql(u8, url[0..7], "http://")) {
+        if (!std.mem.eql(u8, url[0..8], "https://")) {
+            return false;
+        }
+    }
+    // Check for dangerous characters
+    for (url) |c| {
+        if (c == '<' or c == '>' or c == '"' or c == '\'' or c == '&' or c == ';') {
+            return false;
+        }
+    }
+    return true;
+}
+
 pub const Page = struct {
     allocator: std.mem.Allocator,
     cdp_client: cdp.CdpClient,
 
     /// Navigate to a URL with a wait condition.
     pub fn goto(self: *Page, url: []const u8, wait_until: options.WaitUntil) !void {
+        if (!isValidUrl(url)) {
+            return error.InvalidUrl;
+        }
         const wait_str = switch (wait_until) {
             .load => "load",
             .domcontentloaded => "domcontentloaded",
