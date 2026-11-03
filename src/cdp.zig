@@ -1,5 +1,6 @@
 const std = @import("std");
 
+/// Protocolo Chrome DevTools (CDP) sobre WebSocket.
 pub const CdpClient = struct {
     allocator: std.mem.Allocator,
     next_id: u64 = 1,
@@ -17,7 +18,7 @@ pub const CdpClient = struct {
         return .{
             .allocator = allocator,
             .next_id = 1,
-            .connected = true,
+            .connected = false,
         };
     }
 
@@ -25,10 +26,10 @@ pub const CdpClient = struct {
         if (!self.connected) {
             return error.NotConnected;
         }
-        const id = self.next_id;
-        self.next_id += 1;
         _ = method;
         _ = params;
+        const id = self.next_id;
+        self.next_id += 1;
         return id;
     }
 
@@ -38,19 +39,27 @@ pub const CdpClient = struct {
         params: ?[]const u8,
         timeout_ms: u64,
     ) ![]u8 {
-        _ = timeout_ms;
         if (!self.connected) {
             return error.NotConnected;
         }
-        const id = try self.send(method, params);
-        const id_str = try intToStr(self.allocator, id);
-        defer self.allocator.free(id_str);
-        return try self.allocator.dupe(u8, "{\"id\":0,\"result\":{}}");
+        _ = method;
+        _ = params;
+        _ = timeout_ms;
+        return error.NotConnected;
     }
 
     pub fn close(self: *CdpClient) void {
         self.connected = false;
     }
+};
+
+pub const WebSocketOpcode = enum(u8) {
+    continuation = 0x0,
+    text = 0x1,
+    binary = 0x2,
+    close = 0x8,
+    ping = 0x9,
+    pong = 0xa,
 };
 
 fn intToStr(allocator: std.mem.Allocator, val: u64) ![]u8 {
@@ -80,5 +89,8 @@ fn intToStr(allocator: std.mem.Allocator, val: u64) ![]u8 {
 pub const CdpError = error{
     NotConnected,
     Timeout,
+    HeaderTooLarge,
+    BadStatus,
+    NotTextFrame,
     UnexpectedEof,
 };
