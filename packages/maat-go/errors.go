@@ -27,6 +27,7 @@ const (
 	CodeNotConnected      = "NOT_CONNECTED"
 	CodeTimeout           = "TIMEOUT"
 	CodeTransportError    = "TRANSPORT_ERROR"
+	CodeRateLimitExceeded = "RATE_LIMIT_EXCEEDED"
 	CodeInvalidResponse   = "INVALID_RESPONSE"
 	CodeServerError       = "SERVER_ERROR"
 	CodeOther             = "ERROR"
@@ -138,5 +139,19 @@ func NewTransportError(detail string) *TransportError {
 	return &TransportError{
 		MaatError: MaatError{Code: CodeTransportError, Message: fmt.Sprintf("Erro de transporte: %s", detail)},
 		Detail:    detail,
+	}
+}
+
+// RateLimitError é retornado quando o limite de taxa é excedido.
+type RateLimitError struct {
+	MaatError
+}
+
+func NewRateLimitError() *RateLimitError {
+	return &RateLimitError{
+		MaatError: MaatError{
+			Code:    CodeRateLimitExceeded,
+			Message: "Limite de taxa excedido. Tente novamente em alguns segundos.",
+		},
 	}
 }

@@ -40,6 +40,9 @@ pub enum MaatError {
 
     #[error("{message}")]
     Other { message: String },
+
+    #[error("Limite de taxa excedido. Tente novamente em alguns segundos.")]
+    RateLimitExceeded,
 }
 
 impl MaatError {
@@ -56,6 +59,7 @@ impl MaatError {
             MaatError::Transport { .. } => "TRANSPORT_ERROR",
             MaatError::InvalidResponse { .. } => "INVALID_RESPONSE",
             MaatError::ServerError { .. } => "SERVER_ERROR",
+            MaatError::RateLimitExceeded => "RATE_LIMIT_EXCEEDED",
             MaatError::Other { .. } => "ERROR",
         }
     }
