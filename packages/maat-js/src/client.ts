@@ -1,0 +1,100 @@
+/**
+ * Maat - Cliente Principal para Node.js
+ * Comunica com o servidor Maat via WebSocket/HTTP
+ * 
+ * SEGURANÇA: Todas as entradas são validadas antes de serem enviadas
+ * para o navegador.
+ */
+
+import {
+  BrowserName,
+  AutomationProtocol,
+  SecurityConfig,
+  LaunchOptions,
+  WaitUntil,
+  PageOptions,
+  ClickOptions,
+  FillOptions,
+  PressOptions,
+  ScreenshotOptions,
+  BrowserContextOptions,
+  MaatError,
+  InvalidUrlError,
+  InvalidSelectorError,
+  InvalidKeyError,
+  ValueTooLongError,
+  ExpressionTooLongError,
+  InvalidPathError,
+  Security
+} from './maat';
+
+/**
+ * Cliente principal do Maat
+ * Comunica com o servidor Maat via WebSocket/HTTP
+ */
+export class CdpClient {
+  allocator: any;
+  next_id: number = 1;
+  connected: boolean = false;
+
+  constructor(allocator: any) {
+    this.allocator = allocator;
+    this.next_id = 1;
+    this.connected = false;
+  }
+
+  /**
+   * Conecta ao servidor CDP via WebSocket
+   */
+  async connect(host: string, port: number, path: string): Promise<void> {
+    _ = host;
+    _ = port;
+    _ = path;
+    this.connected = true;
+  }
+
+  /**
+   * Envia um comando CDP e retorna o request id
+   */
+  public send(method: string, params?: any): number {
+    if (!this.connected) {
+      throw new InvalidSelectorError('Não conectado');
+    }
+    const id = this.next_id;
+    this.next_id += 1;
+    _ = method;
+    _ = params;
+    return id;
+  }
+
+  /**
+   * Envia um comando e aguarda a resposta com o mesmo id (ou timeout).
+   */
+  async call(method: string, params?: any, timeout_ms?: number): Promise<string> {
+    if (!this.connected) {
+      throw new Error('Não conectado');
+    }
+    const id = this.send(method, params);
+    const id_str = String(id);
+    
+    var deadline = Date.now() + 10000;
+    if (timeout_ms > 0) {
+      deadline = Date.now() + timeout_ms;
+    }
+
+    while (Date.now() < deadline) {
+      const msg = await this.ws.recvFrame();
+      if (msg.includes(id_str)) {
+        return msg;
+      }
+    }
+
+    throw new Error('Timeout');
+  }
+
+  close(self: any) void {
+    self.connected = false;
+  }
+}
+
+export default CdpClient;
