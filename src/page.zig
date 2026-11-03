@@ -20,6 +20,33 @@ pub fn isValidUrl(url: []const u8) bool {
     return true;
 }
 
+/// Validates a CSS selector to prevent injection attacks.
+/// Only allows safe CSS selector characters.
+pub fn isValidSelector(selector: []const u8) bool {
+    if (selector.len == 0) return false;
+    if (selector.len > 256) return false;
+    // Check for dangerous characters
+    for (selector) |c| {
+        if (c == '<' or c == '>' or c == '"' or c == '\'' or c == '&' or c == ';' or c == '(' or c == ')' or c == '<' or c == '>') {
+            return false;
+        }
+    }
+    return true;
+}
+
+/// Validates a keyboard key to prevent injection attacks.
+pub fn isValidKey(key: []const u8) bool {
+    if (key.len == 0) return false;
+    if (key.len > 32) return false;
+    // Only allow alphanumeric characters and common key names
+    for (key) |c| {
+        if (!(c >= 'a' and c <= 'z') and !(c >= 'A' and c <= 'Z') and !(c >= '0' and c <= '9') and c != '_' and c != '-' and c != '.') {
+            return false;
+        }
+    }
+    return true;
+}
+
 pub const Page = struct {
     allocator: std.mem.Allocator,
     cdp_client: cdp.CdpClient,
@@ -52,6 +79,9 @@ pub const Page = struct {
 
     /// Click on an element matching the selector.
     pub fn click(self: *Page, selector: []const u8) !void {
+        if (!isValidSelector(selector)) {
+            return error.InvalidSelector;
+        }
         const prefix: []const u8 = "{\"selector\":\"";
         const suffix: []const u8 = "\"}";
         const total = prefix.len + selector.len + suffix.len;
@@ -67,6 +97,12 @@ pub const Page = struct {
 
     /// Fill a form field matching the selector with a value.
     pub fn fill(self: *Page, selector: []const u8, value: []const u8) !void {
+        if (!isValidSelector(selector)) {
+            return error.InvalidSelector;
+        }
+        if (value.len > 1000) {
+            return error.ValueTooLong;
+        }
         const prefix: []const u8 = "{\"selector\":\"";
         const mid: []const u8 = "\",\"value\":\"";
         const suffix: []const u8 = "\"}";
@@ -85,6 +121,9 @@ pub const Page = struct {
 
     /// Press a keyboard key.
     pub fn press(self: *Page, key: []const u8) !void {
+        if (!isValidKey(key)) {
+            return error.InvalidKey;
+        }
         const prefix: []const u8 = "{\"key\":\"";
         const suffix: []const u8 = "\"}";
         const total = prefix.len + key.len + suffix.len;
@@ -110,6 +149,9 @@ pub const Page = struct {
 
     /// Execute JavaScript in the page context.
     pub fn evaluate(self: *Page, expression: []const u8) ![]u8 {
+        if (expression.len > 1000) {
+            return error.ExpressionTooLong;
+        }
         const prefix: []const u8 = "{\"expression\":\"";
         const suffix: []const u8 = "\"}";
         const total = prefix.len + expression.len + suffix.len;

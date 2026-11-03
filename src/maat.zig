@@ -45,10 +45,16 @@ pub const isFirefoxAvailable = firefox.isFirefoxAvailable;
 
 // Re-export page validation
 pub const isValidUrl = page.isValidUrl;
+pub const isValidSelector = page.isValidSelector;
+pub const isValidKey = page.isValidKey;
 
 // Error union for the public API.
 pub const MaatError = error{
     Timeout,
     AllocFailed,
     InvalidUrl,
+    InvalidSelector,
+    InvalidKey,
+    ValueTooLong,
+    ExpressionTooLong,
 };
