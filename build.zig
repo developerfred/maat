@@ -139,4 +139,20 @@ pub fn build(b: *std.Build) void {
     test_cmd.step.dependOn(b.getInstallStep());
     const test_step = b.step("test", "Run tests");
     test_step.dependOn(&test_cmd.step);
+
+    const graph_test_module = b.addModule("graph_test", .{
+        .root_source_file = b.path("src/graph_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &[_]std.Build.Module.Import{
+            .{ .name = "maat", .module = maat_module },
+        },
+    });
+
+    const graph_test_cmd = b.addTest(.{
+        .root_module = graph_test_module,
+    });
+    graph_test_cmd.step.dependOn(b.getInstallStep());
+    const graph_test_step = b.step("graph-test", "Run graph tests");
+    graph_test_step.dependOn(&graph_test_cmd.step);
 }
