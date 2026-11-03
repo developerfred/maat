@@ -32,6 +32,10 @@ pub fn main() !void {
     const title = try page.title();
     std.debug.print("Page title: {s}\n", .{title});
 
+    // Wait for an element to appear
+    try page.waitForSelector("button.submit", 5000);
+    std.debug.print("Waited for button.submit\n", .{});
+
     // Click on an element
     try page.click("button.submit");
     std.debug.print("Clicked button.submit\n", .{});
@@ -43,6 +47,10 @@ pub fn main() !void {
     // Press Enter
     try page.press("Enter");
     std.debug.print("Pressed Enter\n", .{});
+
+    // Execute JavaScript
+    const js_result = try page.evaluate("document.title");
+    std.debug.print("JS evaluate result: {s}\n", .{js_result});
 
     // Take screenshot
     try page.screenshot("example.png");
