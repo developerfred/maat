@@ -104,6 +104,27 @@ pub const Page = struct {
         return try self.allocator.dupe(u8, "evaluate-result");
     }
 
+    /// Wait for a JavaScript function to return true.
+    pub fn waitForFunction(self: *Page, expression: []const u8, timeout_ms: u64) !void {
+        const prefix: []const u8 = "{\"expression\":\"";
+        const mid: []const u8 = "\",\"timeout\":";
+        const suffix: []const u8 = "}";
+        const timeout_str = try std.fmt.allocPrint(self.allocator, "{d}", .{timeout_ms});
+        defer self.allocator.free(timeout_str);
+        const total = prefix.len + expression.len + mid.len + timeout_str.len + suffix.len;
+        const params = try self.allocator.alloc(u8, total);
+        defer self.allocator.free(params);
+        var written: usize = 0;
+        for (prefix) |b| { params[written] = b; written += 1; }
+        for (expression) |b| { params[written] = b; written += 1; }
+        for (mid) |b| { params[written] = b; written += 1; }
+        for (timeout_str) |b| { params[written] = b; written += 1; }
+        for (suffix) |b| { params[written] = b; written += 1; }
+
+        const resp = try self.cdp_client.call("Runtime.evaluate", params, timeout_ms);
+        _ = resp;
+    }
+
     /// Wait for an element matching the selector to appear.
     pub fn waitForSelector(self: *Page, selector: []const u8, timeout_ms: u64) !void {
         const prefix: []const u8 = "{\"selector\":\"";
