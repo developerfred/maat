@@ -21,7 +21,10 @@ pub const LaunchOptions = struct {
     executable_path: []const u8 = "",
 };
 
-/// Result of browser launch.
+/// Factory for launching browsers.
+///
+/// Single entry point for all browsers. Selects implementation based on
+/// BrowserName and AutomationProtocol. Easy to extend with new browsers.
 pub const Browser = struct {
     allocator: std.mem.Allocator,
     name: BrowserName,
