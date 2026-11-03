@@ -10,17 +10,65 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    const options_module = b.addModule("options", .{
+        .root_source_file = b.path("src/options.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const helpers_module = b.addModule("helpers", .{
+        .root_source_file = b.path("src/helpers.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &[_]std.Build.Module.Import{
+            .{ .name = "options", .module = options_module },
+        },
+    });
+
+    const graph_module = b.addModule("graph", .{
+        .root_source_file = b.path("src/graph.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const page_module = b.addModule("page", .{
+        .root_source_file = b.path("src/page.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &[_]std.Build.Module.Import{
+            .{ .name = "cdp", .module = cdp_module },
+            .{ .name = "options", .module = options_module },
+        },
+    });
+
+    const browser_module = b.addModule("browser", .{
+        .root_source_file = b.path("src/browser.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &[_]std.Build.Module.Import{
+            .{ .name = "cdp", .module = cdp_module },
+            .{ .name = "options", .module = options_module },
+            .{ .name = "helpers", .module = helpers_module },
+            .{ .name = "page", .module = page_module },
+        },
+    });
+
     const maat_module = b.addModule("maat", .{
         .root_source_file = b.path("src/maat.zig"),
         .target = target,
         .optimize = optimize,
         .imports = &[_]std.Build.Module.Import{
             .{ .name = "cdp", .module = cdp_module },
+            .{ .name = "options", .module = options_module },
+            .{ .name = "helpers", .module = helpers_module },
+            .{ .name = "graph", .module = graph_module },
+            .{ .name = "page", .module = page_module },
+            .{ .name = "browser", .module = browser_module },
         },
     });
 
-    const maat_test_module = b.addModule("maat_test", .{
-        .root_source_file = b.path("src/maat_test.zig"),
+    const main_module = b.addModule("main", .{
+        .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
         .imports = &[_]std.Build.Module.Import{
@@ -28,8 +76,8 @@ pub fn build(b: *std.Build) void {
         },
     });
 
-    const main_module = b.addModule("main", .{
-        .root_source_file = b.path("src/main.zig"),
+    const graph_example_module = b.addModule("graph_example", .{
+        .root_source_file = b.path("examples/graph_example.zig"),
         .target = target,
         .optimize = optimize,
         .imports = &[_]std.Build.Module.Import{
@@ -54,8 +102,19 @@ pub fn build(b: *std.Build) void {
     const run_step = b.step("run", "Run the example");
     run_step.dependOn(&run_cmd.step);
 
+    const graph_example_exe = b.addExecutable(.{
+        .name = "graph-example",
+        .root_module = graph_example_module,
+    });
+    b.installArtifact(graph_example_exe);
+
+    const graph_example_run_cmd = b.addRunArtifact(graph_example_exe);
+    graph_example_run_cmd.step.dependOn(b.getInstallStep());
+    const graph_example_step = b.step("graph-example", "Run graph example");
+    graph_example_step.dependOn(&graph_example_run_cmd.step);
+
     const test_cmd = b.addTest(.{
-        .root_module = maat_test_module,
+        .root_module = main_module,
     });
     test_cmd.step.dependOn(b.getInstallStep());
     const test_step = b.step("test", "Run tests");

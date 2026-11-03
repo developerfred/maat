@@ -28,10 +28,10 @@ pub fn main() !void {
 
     // Get page title
     const title = try page.title();
-    std.debug.print("Maat - Título da página: {s}\n", .{title});
+    std.debug.print("Maat - Page title: {s}\n", .{title});
 
     // Take screenshot
-    try page.screenshot("exemplo.png");
+    try page.screenshot("example.png");
 
-    std.debug.print("Maat: automação concluída com sandbox ativo.\n", .{});
+    std.debug.print("Maat: automation completed with sandbox active.\n", .{});
 }
