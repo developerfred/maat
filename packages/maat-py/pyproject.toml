@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "maat-py"
+version = "0.1.0"
+description = "Maat - Playwright-like browser automation in Python with sandbox enabled by default"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "Maat Team", email = "team@maat.dev" }]
+license = { text = "MIT" }
+keywords = ["maat", "playwright", "browser-automation", "zig", "sandbox", "security", "testing"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.dependencies]
+websockets = ">=11.0"
+httpx = ">=0.24"
+typer = ">=0.12"
+
+[project.scripts]
+maat = "maat.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/maat"]
