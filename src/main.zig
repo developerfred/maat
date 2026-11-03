@@ -7,7 +7,7 @@ pub fn main() !void {
     var browser = try maat.Browser.launch(allocator, .{
         .name = maat.BrowserName.chromium,
         .headless = false,
-        .sandbox = true, // sandbox ligado por padrão
+        .security = .{ .sandbox = true }, // sandbox enabled by default
     });
     defer browser.close();
 

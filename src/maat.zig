@@ -12,14 +12,25 @@ pub const AutomationProtocol = enum {
     webdriver, // WebDriver / BiDi (Firefox, WebKit)
 };
 
+/// Security configuration for browser launch.
+pub const SecurityConfig = struct {
+    /// Sandbox enabled by default. Set to false only in trusted isolated environments.
+    sandbox: bool = true,
+};
+
 pub const LaunchOptions = struct {
     name: BrowserName = .chromium,
     protocol: AutomationProtocol = .cdp,
     headless: bool = true,
-    sandbox: bool = true, // sandbox enabled by default
+    security: SecurityConfig = .{ .sandbox = true },
     args: [][]const u8 = &[_][]const u8{},
     executable_path: []const u8 = "",
 };
+
+/// Get sandbox flag from launch options.
+fn isSandboxEnabled(opts: LaunchOptions) bool {
+    return opts.security.sandbox;
+}
 
 /// Factory for launching browsers.
 ///
@@ -47,7 +58,7 @@ pub const Browser = struct {
         if (opts.headless) {
             try args.append(allocator, "--headless=new");
         }
-        if (!opts.sandbox) {
+        if (!isSandboxEnabled(opts)) {
             try args.append(allocator, "--no-sandbox");
         }
         for (opts.args) |arg| {
