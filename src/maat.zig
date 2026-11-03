@@ -5,6 +5,7 @@ const page = @import("page");
 const cdp = @import("cdp");
 const graph = @import("graph");
 const helpers = @import("helpers");
+const context = @import("context");
 
 // Re-export options
 pub const BrowserName = options.BrowserName;
@@ -33,6 +34,7 @@ pub const CdpError = cdp.CdpError;
 // Re-export browser and page
 pub const Browser = browser.Browser;
 pub const Page = page.Page;
+pub const BrowserContext = context.BrowserContext;
 
 // Error union for the public API.
 pub const MaatError = error{

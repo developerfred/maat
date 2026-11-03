@@ -53,6 +53,17 @@ pub fn build(b: *std.Build) void {
         },
     });
 
+    const context_module = b.addModule("context", .{
+        .root_source_file = b.path("src/context.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &[_]std.Build.Module.Import{
+            .{ .name = "cdp", .module = cdp_module },
+            .{ .name = "options", .module = options_module },
+            .{ .name = "page", .module = page_module },
+        },
+    });
+
     const maat_module = b.addModule("maat", .{
         .root_source_file = b.path("src/maat.zig"),
         .target = target,
@@ -64,6 +75,7 @@ pub fn build(b: *std.Build) void {
             .{ .name = "graph", .module = graph_module },
             .{ .name = "page", .module = page_module },
             .{ .name = "browser", .module = browser_module },
+            .{ .name = "context", .module = context_module },
         },
     });
 
