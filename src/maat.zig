@@ -159,6 +159,14 @@ fn defaultProtocolFor(name: BrowserName) AutomationProtocol {
     }
 }
 
+/// WebKit/Safari specific launch notes:
+/// - On macOS, Safari executable is at /Applications/Safari.app/Contents/MacOS/Safari
+/// - Requires Safari's Remote WebDriver to be enabled in Develop menu
+/// - Sandbox is managed by macOS App Sandbox, enabled by default
+pub const WebKitNotes = struct {
+    pub const macos_executable_path: []const u8 = "/Applications/Safari.app/Contents/MacOS/Safari";
+};
+
 fn waitForDebugPort(port: u16, timeout_ms: u64) !void {
     _ = port;
     _ = timeout_ms;
