@@ -214,7 +214,7 @@ fn resolveExecutable(opts: LaunchOptions) ![]const u8 {
     }
 }
 
-fn defaultProtocolFor(name: BrowserName) AutomationProtocol {
+pub fn defaultProtocolFor(name: BrowserName) AutomationProtocol {
     switch (name) {
         .chromium => return .cdp,
         .firefox => return .webdriver,
@@ -228,7 +228,7 @@ pub const WebKitNotes = struct {
     pub const macos_executable_path: []const u8 = "/Applications/Safari.app/Contents/MacOS/Safari";
 };
 
-fn isSandboxEnabled(opts: LaunchOptions) bool {
+pub fn isSandboxEnabled(opts: LaunchOptions) bool {
     return opts.security.sandbox;
 }
 
