@@ -35,19 +35,12 @@ jobs:
         run: zig build test || true
 
       - name: Run example (skip if no browser)
+        shell: bash
         run: |
-          if [ "$(uname)" = "Windows_NT" ]; then
-            if where chromium-browser >nul 2>&1 || where google-chrome >nul 2>&1 || where chromium >nul 2>&1; then
-              zig build run || true
-            else
-              echo "No Chromium found, skipping run example"
-            fi
+          if command -v chromium-browser >/dev/null 2>&1 || command -v google-chrome >/dev/null 2>&1 || command -v chromium >/dev/null 2>&1; then
+            zig build run || true
           else
-            if command -v chromium-browser >/dev/null 2>&1 || command -v google-chrome >/dev/null 2>&1 || command -v chromium >/dev/null 2>&1; then
-              zig build run || true
-            else
-              echo "No Chromium found, skipping run example"
-            fi
+            echo "No Chromium found, skipping run example"
           fi
 
   build-compat:
