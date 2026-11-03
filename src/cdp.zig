@@ -3,7 +3,7 @@ const std = @import("std");
 /// Protocolo Chrome DevTools (CDP) sobre WebSocket.
 ///
 /// Fase 1: stub funcional que compila e roda.
-/// A implementação real de WebSocket + rede TCP vem na Fase 2 (Issue 4: CDP Chromium).
+/// Implementação real de rede WebSocket vem em issue dedicada.
 pub const CdpClient = struct {
     allocator: std.mem.Allocator,
     next_id: u64 = 1,
@@ -18,8 +18,6 @@ pub const CdpClient = struct {
         _ = host;
         _ = port;
         _ = path;
-        // Fase 1: simula conexão bem-sucedida
-        // Fase 2: implementar TCP connect + handshake HTTP Upgrade
         return .{
             .allocator = allocator,
             .next_id = 1,
@@ -50,7 +48,6 @@ pub const CdpClient = struct {
         }
         const id = try self.send(method, params);
         _ = id;
-        // Resposta JSON estática (não alocada, não precisa liberar)
         return "{\"id\":0,\"result\":{}}";
     }
 
