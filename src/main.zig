@@ -4,14 +4,14 @@ const maat = @import("maat");
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
-    const browser = try maat.Browser.launch(allocator, .{
+    var browser = try maat.Browser.launch(allocator, .{
         .name = maat.BrowserName.chromium,
         .headless = false,
         .sandbox = true, // sandbox ligado por padrão
     });
     defer browser.close();
 
-    const page = try browser.newPage();
+    var page = try browser.newPage();
     defer page.close();
 
     try page.goto("https://example.com");
