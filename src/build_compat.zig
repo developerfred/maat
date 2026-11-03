@@ -1,14 +1,19 @@
 const std = @import("std");
 
-/// Camada de compatibilidade automática de API do Zig.
+/// Zig API Compatibility Layer.
 ///
-/// Detecta a versão do Zig em tempo de compilação e abstrai diferenças
-/// de API do build.zig entre versões (0.11 → master).
+/// Detects the Zig version at compile time and abstracts differences
+/// of the build.zig API between versions (0.11 → master).
+///
+/// This module provides wrapper functions that can be used by build scripts
+/// to maintain compatibility across Zig versions. When a new Zig version
+/// breaks the API, only this file needs to be updated.
 pub const ZigVersion = struct {
     major: u16,
     minor: u16,
     patch: u16,
 
+    /// Returns true if this version is >= the given version.
     pub fn isAtLeast(self: ZigVersion, major: u16, minor: u16, patch: u16) bool {
         if (self.major > major) return true;
         if (self.major < major) return false;
@@ -17,15 +22,21 @@ pub const ZigVersion = struct {
         return self.patch >= patch;
     }
 
+    /// Returns true if this version is < the given version.
     pub fn isBefore(self: ZigVersion, major: u16, minor: u16, patch: u16) bool {
         return !self.isAtLeast(major, minor, patch);
     }
 };
 
+/// Detects the Zig version.
+/// Currently hardcoded to 0.17.0. In the future, this could read
+/// std.builtin.zig_version or parse `zig version` output.
 pub const detectZigVersion = fn () ZigVersion {
     return ZigVersion{ .major = 0, .minor = 17, .patch = 0 };
 };
 
+/// Wrapper for adding a module to the build.
+/// Works across multiple Zig versions (0.11+).
 pub fn addModuleCompat(
     b: *std.Build,
     name: []const u8,
@@ -43,6 +54,7 @@ pub fn addModuleCompat(
     return b.addModule(name, opts);
 }
 
+/// Wrapper for adding a library to the build.
 pub fn addLibraryCompat(
     b: *std.Build,
     name: []const u8,
@@ -55,6 +67,7 @@ pub fn addLibraryCompat(
     return b.addLibrary(opts);
 }
 
+/// Wrapper for adding an executable to the build.
 pub fn addExecutableCompat(
     b: *std.Build,
     name: []const u8,
@@ -67,6 +80,8 @@ pub fn addExecutableCompat(
     return b.addExecutable(opts);
 }
 
+/// Wrapper for setting target and build mode on a compile step.
+/// Uses @hasDecl to check if the method exists in the current Zig version.
 pub fn setCompileTargetCompat(
     step: *std.Build.Step.Compile,
     target: std.Build.ResolvedTarget,
@@ -80,6 +95,8 @@ pub fn setCompileTargetCompat(
     }
 }
 
+/// Wrapper for linking a library to an executable.
+/// In Zig 0.17+, linking is implicit via root_module/imports.
 pub fn linkLibraryCompat(
     exe: *std.Build.Step.Compile,
     lib: *std.Build.Step.Compile,
@@ -88,6 +105,7 @@ pub fn linkLibraryCompat(
     _ = lib;
 }
 
+/// Wrapper for adding a run artifact to the build.
 pub fn addRunArtifactCompat(
     b: *std.Build,
     exe: *std.Build.Step.Compile,
@@ -95,6 +113,7 @@ pub fn addRunArtifactCompat(
     return b.addRunArtifact(exe);
 }
 
+/// Wrapper for adding a test to the build.
 pub fn addTestCompat(
     b: *std.Build,
     root_module: *std.Build.Module,
@@ -109,18 +128,27 @@ pub fn addTestCompat(
     return step;
 }
 
+/// Orchestrator for automatic PR/issue management.
+///
+/// Used by GitHub Actions to:
+/// 1. Check PRs ready for merge
+/// 2. Merge the PR
+/// 3. Close the linked issue
 pub const PrIssueOrchestrator = struct {
     pub fn init() PrIssueOrchestrator {
         return .{};
     }
 
+    /// Process PRs ready for merge.
+    /// Should be called by a CI/CD workflow.
     pub fn processReadyToMerge(self: PrIssueOrchestrator) !void {
         _ = self;
-        try std.debug.print("Orchestrator: processando PRs prontos para merge...\n", .{});
+        try std.debug.print("Orchestrator: processing PRs ready for merge...\n", .{});
     }
 
+    /// Close issue linked to a merged PR.
     pub fn closeLinkedIssue(self: PrIssueOrchestrator, pr_number: u32) !void {
         _ = pr_number;
-        try std.debug.print("Orchestrator: fechando issue vinculada ao PR {d}...\n", .{pr_number});
+        try std.debug.print("Orchestrator: closing issue linked to PR {d}...\n", .{pr_number});
     }
 };

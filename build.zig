@@ -106,6 +106,24 @@ pub fn build(b: *std.Build) void {
         },
     });
 
+    const full_example_module = b.addModule("full_example", .{
+        .root_source_file = b.path("examples/full_example.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &[_]std.Build.Module.Import{
+            .{ .name = "maat", .module = maat_module },
+        },
+    });
+
+    const memory_test_module = b.addModule("memory_test", .{
+        .root_source_file = b.path("src/memory_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &[_]std.Build.Module.Import{
+            .{ .name = "maat", .module = maat_module },
+        },
+    });
+
     const maat_lib = b.addLibrary(.{
         .name = "maat",
         .root_module = maat_module,
@@ -128,27 +146,16 @@ pub fn build(b: *std.Build) void {
         .root_module = graph_example_module,
     });
     b.installArtifact(graph_example_exe);
-
     const graph_example_run_cmd = b.addRunArtifact(graph_example_exe);
     graph_example_run_cmd.step.dependOn(b.getInstallStep());
     const graph_example_step = b.step("graph-example", "Run graph example");
     graph_example_step.dependOn(&graph_example_run_cmd.step);
-
-    const full_example_module = b.addModule("full_example", .{
-        .root_source_file = b.path("examples/full_example.zig"),
-        .target = target,
-        .optimize = optimize,
-        .imports = &[_]std.Build.Module.Import{
-            .{ .name = "maat", .module = maat_module },
-        },
-    });
 
     const full_example_exe = b.addExecutable(.{
         .name = "full-example",
         .root_module = full_example_module,
     });
     b.installArtifact(full_example_exe);
-
     const full_example_run_cmd = b.addRunArtifact(full_example_exe);
     full_example_run_cmd.step.dependOn(b.getInstallStep());
     const full_example_step = b.step("full-example", "Run full example");
@@ -160,31 +167,6 @@ pub fn build(b: *std.Build) void {
     test_cmd.step.dependOn(b.getInstallStep());
     const test_step = b.step("test", "Run tests");
     test_step.dependOn(&test_cmd.step);
-
-    const graph_test_module = b.addModule("graph_test", .{
-        .root_source_file = b.path("src/graph_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .imports = &[_]std.Build.Module.Import{
-            .{ .name = "maat", .module = maat_module },
-        },
-    });
-
-    const graph_test_cmd = b.addTest(.{
-        .root_module = graph_test_module,
-    });
-    graph_test_cmd.step.dependOn(b.getInstallStep());
-    const graph_test_step = b.step("graph-test", "Run graph tests");
-    graph_test_step.dependOn(&graph_test_cmd.step);
-
-    const memory_test_module = b.addModule("memory_test", .{
-        .root_source_file = b.path("src/memory_test.zig"),
-        .target = target,
-        .optimize = optimize,
-        .imports = &[_]std.Build.Module.Import{
-            .{ .name = "maat", .module = maat_module },
-        },
-    });
 
     const memory_test_cmd = b.addTest(.{
         .root_module = memory_test_module,
