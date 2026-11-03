@@ -2,8 +2,8 @@ const std = @import("std");
 
 /// Protocolo Chrome DevTools (CDP) sobre WebSocket.
 ///
-/// Implementação de stub funcional que compila e roda.
-/// A implementação real de rede WebSocket vem em issue dedicada.
+/// Fase 1: stub funcional que compila e roda.
+/// Implementação real de rede WebSocket vem em issue dedicada.
 pub const CdpClient = struct {
     allocator: std.mem.Allocator,
     next_id: u64 = 1,
