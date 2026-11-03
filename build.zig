@@ -113,6 +113,26 @@ pub fn build(b: *std.Build) void {
     const graph_example_step = b.step("graph-example", "Run graph example");
     graph_example_step.dependOn(&graph_example_run_cmd.step);
 
+    const full_example_module = b.addModule("full_example", .{
+        .root_source_file = b.path("examples/full_example.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &[_]std.Build.Module.Import{
+            .{ .name = "maat", .module = maat_module },
+        },
+    });
+
+    const full_example_exe = b.addExecutable(.{
+        .name = "full-example",
+        .root_module = full_example_module,
+    });
+    b.installArtifact(full_example_exe);
+
+    const full_example_run_cmd = b.addRunArtifact(full_example_exe);
+    full_example_run_cmd.step.dependOn(b.getInstallStep());
+    const full_example_step = b.step("full-example", "Run full example");
+    full_example_step.dependOn(&full_example_run_cmd.step);
+
     const test_cmd = b.addTest(.{
         .root_module = main_module,
     });
