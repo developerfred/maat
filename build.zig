@@ -176,4 +176,20 @@ pub fn build(b: *std.Build) void {
     graph_test_cmd.step.dependOn(b.getInstallStep());
     const graph_test_step = b.step("graph-test", "Run graph tests");
     graph_test_step.dependOn(&graph_test_cmd.step);
+
+    const memory_test_module = b.addModule("memory_test", .{
+        .root_source_file = b.path("src/memory_test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &[_]std.Build.Module.Import{
+            .{ .name = "maat", .module = maat_module },
+        },
+    });
+
+    const memory_test_cmd = b.addTest(.{
+        .root_module = memory_test_module,
+    });
+    memory_test_cmd.step.dependOn(b.getInstallStep());
+    const memory_test_step = b.step("memory-test", "Run memory tests");
+    memory_test_step.dependOn(&memory_test_cmd.step);
 }
