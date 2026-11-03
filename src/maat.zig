@@ -9,6 +9,7 @@ const helpers = @import("helpers");
 const context = @import("context");
 const webkit = @import("webkit");
 const firefox = @import("firefox");
+const security = @import("security");
 
 // Re-export options
 pub const BrowserName = options.BrowserName;
@@ -47,6 +48,11 @@ pub const isFirefoxAvailable = firefox.isFirefoxAvailable;
 pub const isValidUrl = page.isValidUrl;
 pub const isValidSelector = page.isValidSelector;
 pub const isValidKey = page.isValidKey;
+pub const isValidExpression = page.isValidExpression;
+pub const isValidPath = page.isValidPath;
+
+// Re-export security module
+pub const Security = security.Security;
 
 // Error union for the public API.
 pub const MaatError = error{
@@ -57,4 +63,5 @@ pub const MaatError = error{
     InvalidKey,
     ValueTooLong,
     ExpressionTooLong,
+    InvalidPath,
 };

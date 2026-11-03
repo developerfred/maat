@@ -40,6 +40,12 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    const security_module = b.addModule("security", .{
+        .root_source_file = b.path("src/security.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
     const page_module = b.addModule("page", .{
         .root_source_file = b.path("src/page.zig"),
         .target = target,
@@ -47,6 +53,7 @@ pub fn build(b: *std.Build) void {
         .imports = &[_]std.Build.Module.Import{
             .{ .name = "cdp", .module = cdp_module },
             .{ .name = "options", .module = options_module },
+            .{ .name = "security", .module = security_module },
         },
     });
 
@@ -109,6 +116,7 @@ pub fn build(b: *std.Build) void {
             .{ .name = "context", .module = context_module },
             .{ .name = "webkit", .module = webkit_module },
             .{ .name = "firefox", .module = firefox_module },
+            .{ .name = "security", .module = security_module },
         },
     });
 
