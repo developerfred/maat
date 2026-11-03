@@ -46,6 +46,12 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    const rate_limit_module = b.addModule("rate_limit", .{
+        .root_source_file = b.path("src/rate_limit.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
     const page_module = b.addModule("page", .{
         .root_source_file = b.path("src/page.zig"),
         .target = target,
@@ -117,6 +123,7 @@ pub fn build(b: *std.Build) void {
             .{ .name = "webkit", .module = webkit_module },
             .{ .name = "firefox", .module = firefox_module },
             .{ .name = "security", .module = security_module },
+            .{ .name = "rate_limit", .module = rate_limit_module },
         },
     });
 

@@ -9,6 +9,7 @@ const helpers = @import("helpers");
 const context = @import("context");
 const webkit = @import("webkit");
 const firefox = @import("firefox");
+const rate_limit = @import("rate_limit");
 const security = @import("security");
 
 // Re-export options
@@ -53,6 +54,9 @@ pub const isValidPath = page.isValidPath;
 
 // Re-export security module
 pub const Security = security.Security;
+
+// Re-export rate limiter
+pub const RateLimiter = rate_limit.RateLimiter;
 
 // Error union for the public API.
 pub const MaatError = error{
