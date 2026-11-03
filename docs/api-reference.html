@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="index, follow">
+    <meta name="description" content="Referência completa da API do Maat - Automação de navegador em Zig com sandbox ativo por padrão. Documentação para desenvolvedores e agentes de IA.">
+    <meta name="keywords" content="Maat, Zig, Playwright, browser automation, API reference, sandbox, CDP, Chromium, Firefox, WebKit, Zig 0.17, sandbox by default">
+    <meta name="author" content="Maat Project">
+    <link rel="canonical" href="https://developerfred.github.io/maat/docs/api-reference.html">
+    <title>Referência da API — Maat (Zig Browser Automation)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Courier New', 'Courier', monospace;
+            background: #ffffff;
+            color: #000000;
+            line-height: 1.6;
+        }
+        /* Brutalist Swiss design */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+        header {
+            border-top: 6px solid #000000;
+            border-bottom: 6px solid #000000;
+            padding: 2rem 0;
+            background: #f5f5f5;
+        }
+        header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+        }
+        header h1 .accent { color: #ff0000; }
+        nav a {
+            color: #000000;
+            text-decoration: none;
+            border: 3px solid #000000;
+            padding: 0.75rem 1.5rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            transition: all 0.1s ease;
+            font-size: 0.9rem;
+        }
+        nav a:hover { background: #000000; color: #ffffff; }
+        .breadcrumb {
+            border-bottom: 2px solid #000000;
+            padding: 1rem 0;
+            font-size: 0.85rem;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+        .breadcrumb a { color: #0066cc; text-decoration: none; border: none; padding: 0; }
+        main {
+            padding: 3rem 0;
+        }
+        .api-section {
+            border: 4px solid #000000;
+            margin: 2rem 0;
+            padding: 2rem;
+            background: #f9f9f9;
+        }
+        .api-section h2 {
+            font-size: 2rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #000000;
+            padding-bottom: 0.5rem;
+        }
+        .api-section h3 {
+            font-size: 1.5rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin: 1.5rem 0 0.5rem 0;
+        }
+        .api-signature {
+            background: #000000;
+            color: #00ff00;
+            padding: 1rem;
+            border: 2px solid #000000;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        .param {
+            border-left: 4px solid #ff0000;
+            padding-left: 1rem;
+            margin: 0.5rem 0;
+        }
+        .param-name { font-weight: 900; color: #0066cc; }
+        .param-type { color: #666666; font-size: 0.9em; }
+        .param-desc { margin-top: 0.25rem; }
+        .example {
+            background: #f5f5f5;
+            border: 2px solid #000000;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+        }
+        .example-title {
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            color: #0066cc;
+        }
+        .return {
+            background: #e6f3ff;
+            border: 2px solid #0066cc;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .return-title {
+            font-weight: 900;
+            color: #0066cc;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+        .badge {
+            display: inline-block;
+            background: #000000;
+            color: #ffffff;
+            padding: 0.25rem 0.6rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 900;
+            margin-right: 0.5rem;
+        }
+        .badge-sandbox { background: #ff0000; }
+        .badge-cdp { background: #0066cc; }
+        .badge-webdriver { background: #660066; }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1rem 0;
+        }
+        th, td {
+            border: 2px solid #000000;
+            padding: 0.75rem;
+            text-align: left;
+            font-family: 'Courier New', monospace;
+        }
+        th { background: #000000; color: #ffffff; font-weight: 900; text-transform: uppercase; }
+        .agent-note {
+            border: 4px dashed #ff0000;
+            background: #fff5f5;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .agent-note .title {
+            font-weight: 900;
+            color: #ff0000;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+        footer {
+            border-top: 6px solid #000000;
+            padding: 2rem 0;
+            margin-top: 4rem;
+            text-align: center;
+            background: #f5f5f5;
+        }
+        footer a { color: #000000; text-decoration: none; border: 2px solid #000000; padding: 0.5rem 1rem; font-weight: 900; text-transform: uppercase; }
+        footer a:hover { background: #000000; color: #ffffff; }
+        .seo-meta {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- SEO Meta for agents -->
+    <div class="seo-meta">
+        <h1>Maat API Reference - Complete Browser Automation API in Zig</h1>
+        <p>Maat is a Playwright-like browser automation framework written in Zig with sandbox enabled by default.</p>
+        <p>Supported browsers: Chromium (CDP), Firefox (WebDriver BiDi), WebKit/Safari (WebDriver).</p>
+        <p>Security: Sandbox ON by default. Addresses CVEs CVE-2026-118306, CVE-2026-118331, CVE-2026-118348, CVE-2026-118344.</p>
+    </div>
+
+    <header>
+        <div class="container">
+            <h1><a href="/" style="text-decoration:none;color:#000000;">Maat <span class="accent">API Reference</span></a></h1>
+            <nav>
+                <a href="/">Home</a>
+                <a href="#browser">Browser</a>
+                <a href="#page">Page</a>
+                <a href="#context">BrowserContext</a>
+                <a href="#cdp">CDP Client</a>
+                <a href="#graph">ContextStore (Graph)</a>
+                <a href="#options">Options</a>
+                <a href="#security">Security</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="/">Home</a> &gt; <a href="#">API Reference</a>
+        </div>
+
+        <main>
+            <section class="api-section" id="browser">
+                <h2>Browser</h2>
+                <p>Classe principal para lançamento e gerenciamento de navegadores.</p>
+
+                <div class="api-signature">
+                    pub const Browser = struct {<br>
+                    &nbsp;&nbsp;allocator: std.mem.Allocator,<br>
+                    &nbsp;&nbsp;name: BrowserName,<br>
+                    &nbsp;&nbsp;cdp_client: CdpClient,<br>
+                    &nbsp;&nbsp;debug_port: u16,<br>
+                    &nbsp;&nbsp;process: ?std.process.Child,<br>
+                    &nbsp;&nbsp;<br>
+                    &nbsp;&nbsp;pub fn launch(allocator, opts: LaunchOptions) !Browser,<br>
+                    &nbsp;&nbsp;pub fn newPage(self: *Browser) !Page,<br>
+                    &nbsp;&nbsp;pub fn newContext(self: *Browser) !BrowserContext,<br>
+                    &nbsp;&nbsp;pub fn close(self: *Browser) void<br>
+                    };
+                </div>
+
+                <div class="param">
+                    <span class="param-name">launch()</span>
+                    <span class="param-type">static method</span>
+                    <div class="param-desc">Lança uma instância do navegador com sandbox ativado por padrão. Retorna uma instância de Browser.</div>
+                </div>
+
+                <div class="param">
+                    <span class="param-name">newPage()</span>
+                    <span class="param-type">instance method</span>
+                    <div class="param-desc">Cria uma nova página/aba no navegador.</div>
+                </div>
+
+                <div class="param">
+                    <span class="param-name">newContext()</span>
+                    <span class="param-type">instance method</span>
+                    <div class="param-desc">Cria um contexto de navegação isolado (cookies, localStorage, sessionStorage isolados).</div>
+                </div>
+
+                <div class="param">
+                    <span class="param-name">close()</span>
+                    <span class="param-type">instance method</span>
+                    <div class="param-desc">Fecha o navegador e encerra o processo.</div>
+                </div>
+
+                <div class="example">
+                    <div class="example-title">Exemplo: Launch com sandbox ativo</div>
+                    <code>
+const browser = try maat.Browser.launch(allocator, .{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;.name = maat.BrowserName.chromium,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;.headless = false,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;.security = .{ .sandbox = true }, // sandbox ON by default<br>
+&nbsp;&nbsp;});<br>
+defer browser.close();
+</code>
+                </div>
+            </section>
+
+            <section class="api-section" id="page">
+                <h2>Page</h2>
+                <p>Classe para operações de página: navegação, cliques, preenchimento, screenshots, título.</p>
+
+                <div class="api-signature">
+                    pub const Page = struct {<br>
+                    &nbsp;&nbsp;allocator: std.mem.Allocator,<br>
+                    &nbsp;&nbsp;cdp_client: CdpClient,<br>
+                    &nbsp;&nbsp;<br>
+                    &nbsp;&nbsp;pub fn goto(self: *Page, url: []const u8, wait_until: WaitUntil) !void,<br>
+                    &nbsp;&nbsp;pub fn click(self: *Page, selector: []const u8) !void,<br>
+                    &nbsp;&nbsp;pub fn fill(self: *Page, selector: []const u8, value: []const u8) !void,<br>
+                    &nbsp;&nbsp;pub fn press(self: *Page, key: []const u8) !void,<br>
+                    &nbsp;&nbsp;pub fn title(self: *Page) ![]u8,<br>
+                    &nbsp;&nbsp;pub fn screenshot(self: *Page, path: []const u8) !void,<br>
+                    &nbsp;&nbsp;pub fn evaluate(self: *Page, expression: []const u8) ![]u8,<br>
+                    &nbsp;&nbsp;pub fn waitForSelector(self: *Page, selector: []const u8, timeout_ms: u64) !void,<br>
+                    &nbsp;&nbsp;pub fn close(self: *Page) void<br>
+                    };
+                </div>
+
+                <table>
+                    <tr><th>Método</th><th>Descrição</th><th>Parâmetros</th></tr>
+                    <tr><td><code>goto()</code></td><td>Navega para uma URL</td><td>url, waitUntil</td></tr>
+                    <tr><td><code>click()</code></td><td>Clica em um elemento</td><td>selector</td></tr>
+                    <tr><td><code>fill()</code></td><td>Preenche um campo de formulário</td><td>selector, value</td></tr>
+                    <tr><td><code>press()</code></td><td>Pressiona uma tecla</td><td>key</td></tr>
+                    <tr><td><code>title()</code></td><td>Obtém o título da página</td><td>-</td></tr>
+                    <tr><td><code>screenshot()</code></td><td>Captura screenshot da página</td><td>path</td></tr>
+                    <tr><td><code>evaluate()</code></td><td>Executa JavaScript na página</td><td>expression</td></tr>
+                    <tr><td><code>waitForSelector()</code></td><td>Aguarda um elemento aparecer</td><td>selector, timeout_ms</td></tr>
+                    <tr><td><code>close()</code></td><td>Fecha a página</td><td>-</td></tr>
+                </table>
+
+                <div class="agent-note">
+                    <div class="title">Nota para Agentes de IA</div>
+                    <p>Todos os métodos de Page enviam comandos CDP (Chrome DevTools Protocol) internamente. O método <code>goto()</code> aceita <code>WaitUntil.load</code>, <code>WaitUntil.domcontentloaded</code> ou <code>WaitUntil.networkidle</code>.</p>
+                </div>
+
+                <div class="example">
+                    <div class="example-title">Exemplo: Navegação completa</div>
+                    <code>
+var page = try browser.newPage();<br>
+defer page.close();<br><br>
+try page.goto("https://example.com", maat.WaitUntil.load);<br>
+try page.click("button.submit");<br>
+try page.fill("input#username", "testuser");<br>
+try page.press("Enter");<br>
+const title = try page.title();<br>
+try page.screenshot("resultado.png");<br>
+const js_result = try page.evaluate("document.title");
+</code>
+                </div>
+            </section>
+
+            <section class="api-section" id="context">
+                <h2>BrowserContext</h2>
+                <p>Contexto de navegação isolado (cookies, localStorage, sessionStorage isolados por contexto).</p>
+
+                <div class="api-signature">
+                    pub const BrowserContext = struct {<br>
+                    &nbsp;&nbsp;allocator: std.mem.Allocator,<br>
+                    &nbsp;&nbsp;name: BrowserName,<br>
+                    &nbsp;&nbsp;cdp_client: CdpClient,<br>
+                    &nbsp;&nbsp;context_id: []const u8,<br>
+                    &nbsp;&nbsp;<br>
+                    &nbsp;&nbsp;pub fn newPage(self: *BrowserContext) !Page,<br>
+                    &nbsp;&nbsp;pub fn cookies(self: *BrowserContext) ![]u8,<br>
+                    &nbsp;&nbsp;pub fn setCookie(self: *BrowserContext, name: []const u8, value: []const u8) !void,<br>
+                    &nbsp;&nbsp;pub fn close(self: *BrowserContext) void<br>
+                    };
+                </div>
+
+                <div class="param">
+                    <span class="param-name">newPage()</span>
+                    <span class="param-type">instance method</span>
+                    <div class="param-desc">Cria uma nova página dentro deste contexto isolado.</div>
+                </div>
+
+                <div class="param">
+                    <span class="param-name">cookies()</span>
+                    <span class="param-type">instance method</span>
+                    <div class="param-desc">Obtém todos os cookies deste contexto.</div>
+                </div>
+
+                <div class="param">
+                    <span class="param-name">setCookie()</span>
+                    <span class="param-type">instance method</span>
+                    <div class="param-desc">Define um cookie neste contexto.</div>
+                </div>
+
+                <div class="example">
+                    <div class="example-title">Exemplo: Contexto isolado com cookies</div>
+                    <code>
+var ctx = try browser.newContext();<br>
+defer ctx.close();<br><br>
+var page = try ctx.newPage();<br>
+try page.goto("https://example.com", maat.WaitUntil.load);<br><br>
+// Definir cookie<br>
+try ctx.setCookie("session_id", "abc123");<br><br>
+// Obter cookies<br>
+const cookies = try ctx.cookies();
+</code>
+                </div>
+            </section>
+
+            <section class="api-section" id="cdp">
+                <h2>CdpClient (Chrome DevTools Protocol)</h2>
+                <p>Cliente de baixo nível para comunicação com o Chrome DevTools Protocol sobre WebSocket.</p>
+
+                <div class="api-signature">
+                    pub const CdpClient = struct {<br>
+                    &nbsp;&nbsp;pub fn connect(allocator, host, port, path) !CdpClient,<br>
+                    &nbsp;&nbsp;pub fn send(self: *CdpClient, method, params) !u64,<br>
+                    &nbsp;&nbsp;pub fn call(self: *CdpClient, method, params, timeout_ms) ![]const u8,<br>
+                    &nbsp;&nbsp;pub fn close(self: *CdpClient) void,<br>
+                    &nbsp;&nbsp;pub const Frame = struct { fin, opcode, masked, payload },<br>
+                    &nbsp;&nbsp;pub fn buildFrame(payload, allocator) ![]u8<br>
+                    };
+                </div>
+
+                <div class="param">
+                    <span class="param-name">connect()</span>
+                    <span class="param-type">static method</span>
+                    <div class="param-desc">Conecta via WebSocket ao navegador (handshake HTTP Upgrade).</div>
+                </div>
+
+                <div class="param">
+                    <span class="param-name">send()</span>
+                    <span class="param-type">instance method</span>
+                    <div class="param-desc">Envia um comando CDP e retorna o request id.</div>
+                </div>
+
+                <div class="param">
+                    <span class="param-name">call()</span>
+                    <span class="param-type">instance method</span>
+                    <div class="param-desc">Envia um comando CDP e aguarda a resposta com timeout.</div>
+                </div>
+
+                <div class="param">
+                    <span class="param-name">buildFrame()</span>
+                    <span class="param-type">static method</span>
+                    <div class="param-desc">Constrói um frame WebSocket com máscara cliente→servidor (pronto para envio via TCP).</div>
+                </div>
+            </section>
+
+            <section class="api-section" id="graph">
+                <h2>ContextStore (Agent Communication Graph)</h2>
+                <p>Loja de contexto compartilhada para comunicação entre agentes sem desperdiçar contexto de janela.</p>
+
+                <div class="api-signature">
+                    pub const ContextStore = struct {<br>
+                    &nbsp;&nbsp;pub fn init(allocator) !ContextStore,<br>
+                    &nbsp;&nbsp;pub fn publish(allocator, topic, data) !u64,<br>
+                    &nbsp;&nbsp;pub fn subscribe(allocator, topic) !ContextSnapshot,<br>
+                    &nbsp;&nbsp;pub fn isStale(topic, since_version) bool,<br>
+                    &nbsp;&nbsp;pub fn deinit(self: *ContextStore) void<br>
+                    };<br><br>
+                    pub const ContextSnapshot = struct {<br>
+                    &nbsp;&nbsp;topic: []const u8,<br>
+                    &nbsp;&nbsp;data: []const u8,<br>
+                    &nbsp;&nbsp;version: u64,<br>
+                    &nbsp;&nbsp;global_version: u64<br>
+                    &nbsp;&nbsp;pub fn deinit(self: *ContextSnapshot, allocator) void<br>
+                    };
+                </div>
+
+                <div class="example">
+                    <div class="example-title">Exemplo: Comunicação entre agentes</div>
+                    <code>
+var store = try maat.ContextStore.init(allocator);<br>
+defer store.deinit();<br><br>
+// Agente A publica status<br>
+const v = try store.publish(allocator, "agent-a/status", "working");<br><br>
+// Agente B lê o status<br>
+var snap = try store.subscribe(allocator, "agent-a/status");<br>
+std.debug.print("Status: {s}\n", .{snap.data});<br>
+snap.deinit(allocator);
+</code>
+                </div>
+            </section>
+
+            <section class="api-section" id="options">
+                <h2>Opções e Enums</h2>
+
+                <h3>BrowserName</h3>
+                <div class="api-signature">
+                    pub const BrowserName = enum { chromium, firefox, webkit };
+                </div>
+
+                <h3>AutomationProtocol</h3>
+                <div class="api-signature">
+                    pub const AutomationProtocol = enum { cdp, webdriver };
+                </div>
+
+                <h3>SecurityConfig</h3>
+                <div class="api-signature">
+                    pub const SecurityConfig = struct { sandbox: bool = true };
+                </div>
+
+                <h3>LaunchOptions</h3>
+                <div class="api-signature">
+                    pub const LaunchOptions = struct {<br>
+                    &nbsp;&nbsp;name: BrowserName = .chromium,<br>
+                    &nbsp;&nbsp;protocol: AutomationProtocol = .cdp,<br>
+                    &nbsp;&nbsp;headless: bool = true,<br>
+                    &nbsp;&nbsp;security: SecurityConfig = .{ .sandbox = true },<br>
+                    &nbsp;&nbsp;args: [][]const u8 = &[_][]const u8{},<br>
+                    &nbsp;&nbsp;executable_path: []const u8 = "",<br>
+                    };
+                </div>
+
+                <h3>WaitUntil</h3>
+                <div class="api-signature">
+                    pub const WaitUntil = enum { load, domcontentloaded, networkidle };
+                </div>
+            </section>
+
+            <section class="api-section" id="security">
+                <h2>Segurança</h2>
+                <div class="badge badge-sandbox">SANDBOX ON BY DEFAULT</div>
+                <p>Maat executa navegadores com <strong>sandbox ativado por padrão</strong>. Isto difere do Playwright, que frequentemente roda com <code>--no-sandbox</code> em ambientes CI.</p>
+
+                <div class="param">
+                    <span class="param-name">.security = .{ .sandbox = true }</span>
+                    <span class="param-type">padrão</span>
+                    <div class="param-desc">Mantém o sandbox ativo do navegador.</div>
+                </div>
+
+                <div class="param">
+                    <span class="param-name">.security = .{ .sandbox = false }</span>
+                    <span class="param-type">opt-in</span>
+                    <div class="param-desc">Desativa o sandbox (apenas em ambientes isolados e confiáveis). NÃO recomendado para produção.</div>
+                </div>
+
+                <p class="agent-note"><strong>CVEs abordadas:</strong> CVE-2026-118306, CVE-2026-118331, CVE-2026-118348, CVE-2026-118344. Reimplementar a orquestração em Zig reduz a superfície de ataque escrita em linguagens inseguras.</p>
+            </section>
+        </main>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>Maat — Construído com Zig &bull; <a href="https://github.com/developerfred/maat">GitHub</a> &bull; <a href="https://github.com/developerfred/maat/issues">Issues</a> &bull; <a href="/docs/migration-guide.html">Guia de Migração Playwright → Maat</a></p>
+            <p>Zig Compatibility Skill: <a href="https://github.com/developerfred/maat/blob/main/ZIG_COMPAT_SKILL.md">ZIG_COMPAT_SKILL.md</a></p>
+        </div>
+    </footer>
+</body>
+</html>
