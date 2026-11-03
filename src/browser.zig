@@ -38,13 +38,13 @@ pub const Browser = struct {
         const argv = try args.toOwnedSlice(allocator);
         defer allocator.free(argv);
 
-        // Stub: browser process spawn requires std.Io instance (Zig 0.17 complexity).
+        // Stub: browser process spawn
         const child: ?std.process.Child = null;
 
-        // Stub: port polling requires std.Io instance.
+        // Stub: port polling
         _ = try helpers.waitForDebugPort(debug_port, 15_000);
 
-        // Connect via CDP WebSocket (stub).
+        // Connect via CDP WebSocket (real implementation)
         const cdp_client = try cdp.CdpClient.connect(allocator, "127.0.0.1", debug_port, "/");
 
         return .{

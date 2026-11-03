@@ -4,10 +4,19 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const net_module = b.addModule("net", .{
+        .root_source_file = b.path("src/net.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
     const cdp_module = b.addModule("cdp", .{
         .root_source_file = b.path("src/cdp.zig"),
         .target = target,
         .optimize = optimize,
+        .imports = &[_]std.Build.Module.Import{
+            .{ .name = "net", .module = net_module },
+        },
     });
 
     const options_module = b.addModule("options", .{
