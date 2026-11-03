@@ -30,6 +30,33 @@ pub const BrowserContext = struct {
     pub fn close(self: *BrowserContext) void {
         _ = self.context_id;
     }
+
+    /// Get cookies for this context.
+    pub fn cookies(self: *BrowserContext) ![]u8 {
+        const params = "{}";
+        const resp = try self.cdp_client.call("Storage.getCookies", params, 10_000);
+        _ = resp;
+        return try self.allocator.dupe(u8, "cookies-result");
+    }
+
+    /// Set a cookie in this context.
+    pub fn setCookie(self: *BrowserContext, name: []const u8, value: []const u8) !void {
+        const prefix: []const u8 = "{\"name\":\"";
+        const mid: []const u8 = "\",\"value\":\"";
+        const suffix: []const u8 = "\"}";
+        const total = prefix.len + name.len + mid.len + value.len + suffix.len;
+        const params = try self.allocator.alloc(u8, total);
+        defer self.allocator.free(params);
+        var written: usize = 0;
+        for (prefix) |b| { params[written] = b; written += 1; }
+        for (name) |b| { params[written] = b; written += 1; }
+        for (mid) |b| { params[written] = b; written += 1; }
+        for (value) |b| { params[written] = b; written += 1; }
+        for (suffix) |b| { params[written] = b; written += 1; }
+
+        const resp = try self.cdp_client.call("Storage.setCookie", params, 10_000);
+        _ = resp;
+    }
 };
 
 const page = @import("page");
