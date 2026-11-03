@@ -7,6 +7,7 @@ const graph = @import("graph");
 const helpers = @import("helpers");
 const context = @import("context");
 const webkit = @import("webkit");
+const firefox = @import("firefox");
 
 // Re-export options
 pub const BrowserName = options.BrowserName;
@@ -38,6 +39,8 @@ pub const Page = page.Page;
 pub const BrowserContext = context.BrowserContext;
 pub const WebKit = webkit.WebKit;
 pub const isWebKitAvailable = webkit.isWebKitAvailable;
+pub const Firefox = firefox.Firefox;
+pub const isFirefoxAvailable = firefox.isFirefoxAvailable;
 
 // Error union for the public API.
 pub const MaatError = error{

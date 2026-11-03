@@ -84,6 +84,17 @@ pub fn build(b: *std.Build) void {
         },
     });
 
+    const firefox_module = b.addModule("firefox", .{
+        .root_source_file = b.path("src/firefox.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &[_]std.Build.Module.Import{
+            .{ .name = "cdp", .module = cdp_module },
+            .{ .name = "options", .module = options_module },
+            .{ .name = "helpers", .module = helpers_module },
+        },
+    });
+
     const maat_module = b.addModule("maat", .{
         .root_source_file = b.path("src/maat.zig"),
         .target = target,
@@ -97,6 +108,7 @@ pub fn build(b: *std.Build) void {
             .{ .name = "browser", .module = browser_module },
             .{ .name = "context", .module = context_module },
             .{ .name = "webkit", .module = webkit_module },
+            .{ .name = "firefox", .module = firefox_module },
         },
     });
 
