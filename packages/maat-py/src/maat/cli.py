@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import sys
 from typing import Optional
 
@@ -13,6 +14,30 @@ from .errors import MaatError
 from .types import BrowserName, WaitUntil
 
 app = typer.Typer(help="Maat - browser automation CLI (sandbox enabled by default)")
+
+
+def is_private_host(host: str) -> bool:
+    """Verifica se um host é privado/interno (prevenção de SSRF)."""
+    # Localhost sempre é privado
+    if host in ("localhost", "127.0.0.1", "::1"):
+        return True
+    # Tenta parsear como IP
+    try:
+        ip = ipaddress.ip_address(host)
+        return ip.is_private or ip.is_loopback
+    except ValueError:
+        pass
+    # Nomes de domínio terminados em .local, .internal, .corp são privados
+    if host.endswith(".local") or host.endswith(".internal") or host.endswith(".corp"):
+        return True
+    return False
+
+
+def _check_host(host: str) -> None:
+    """Rejeita hosts privados/internos (SSRF prevention)."""
+    if is_private_host(host):
+        print(f"Erro: Host '{host}' não permitido (endereço privado/interno)", file=sys.stderr)
+        sys.exit(1)
 
 
 @app.command()
@@ -26,6 +51,7 @@ def launch(
     """Lança um navegador."""
 
     async def _run() -> None:
+        _check_host(host)
         client = MaatClient()
         await client.connect(host, port)
         try:
@@ -57,6 +83,7 @@ def goto(
     """Navega para uma URL."""
 
     async def _run() -> None:
+        _check_host(host)
         client = MaatClient()
         await client.connect(host, port)
         try:
@@ -81,6 +108,7 @@ def click(
     """Clica em um seletor."""
 
     async def _run() -> None:
+        _check_host(host)
         client = MaatClient()
         await client.connect(host, port)
         try:
@@ -106,6 +134,7 @@ def title(
     """Obtém o título da página."""
 
     async def _run() -> None:
+        _check_host(host)
         client = MaatClient()
         await client.connect(host, port)
         try:

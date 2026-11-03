@@ -6,6 +6,34 @@ use crate::types::{
 use crate::security::Security;
 use serde::Serialize;
 use std::collections::HashMap;
+use std::time::Instant;
+
+/// Rate limiter simples baseado em janela deslizante.
+/// Limita o número de requisições por segundo para prevenir DoS.
+struct RateLimiter {
+    max_requests: u32,
+    timestamps: Vec<Instant>,
+}
+
+impl RateLimiter {
+    fn new(max_requests_per_second: u32) -> Self {
+        Self {
+            max_requests: max_requests_per_second,
+            timestamps: Vec::new(),
+        }
+    }
+
+    fn allow(&mut self) -> bool {
+        let now = Instant::now();
+        // Remove timestamps fora da janela de 1 segundo
+        self.timestamps.retain(|t| now.duration_since(*t) < std::time::Duration::from_secs(1));
+        if self.timestamps.len() as u32 >= self.max_requests {
+            return false;
+        }
+        self.timestamps.push(now);
+        true
+    }
+}
 
 /// Requ enviada ao servidor Maat (serializada para JSON).
 #[derive(Serialize)]
@@ -56,6 +84,7 @@ pub struct MaatClient {
     next_id: u64,
     connected: bool,
     api_key: Option<String>,
+    rate_limiter: RateLimiter,
 }
 
 impl MaatClient {
@@ -66,6 +95,7 @@ impl MaatClient {
             next_id: 1,
             connected: false,
             api_key: None,
+            rate_limiter: RateLimiter::new(10),
         }
     }
 
@@ -139,6 +169,9 @@ impl MaatClient {
         if !self.connected {
             return Err(MaatError::NotConnected);
         }
+        if !self.rate_limiter.allow() {
+            return Err(MaatError::RateLimitExceeded);
+        }
 
         if let Some(sec) = options.security {
             if sec.sandbox {
@@ -181,6 +214,9 @@ impl MaatClient {
         if !self.connected {
             return Err(MaatError::NotConnected);
         }
+        if !self.rate_limiter.allow() {
+            return Err(MaatError::RateLimitExceeded);
+        }
         let params = Self::build_params(Some(vec![(
             "browser_id",
             serde_json::to_value(browser_id).unwrap(),
@@ -202,6 +238,9 @@ impl MaatClient {
         if !self.connected {
             return Err(MaatError::NotConnected);
         }
+        if !self.rate_limiter.allow() {
+            return Err(MaatError::RateLimitExceeded);
+        }
         let mut entries: Vec<(&str, serde_json::Value)> =
             vec![("browser_id", serde_json::to_value(browser_id).unwrap())];
         if let Some(s) = options.sandbox {
@@ -219,6 +258,9 @@ impl MaatClient {
     pub async fn new_page(&mut self, options: &PageOptions) -> Result<PageResult, MaatError> {
         if !self.connected {
             return Err(MaatError::NotConnected);
+        }
+        if !self.rate_limiter.allow() {
+            return Err(MaatError::RateLimitExceeded);
         }
         if !Security::is_valid_url(&options.url) {
             return Err(MaatError::InvalidUrl {
@@ -243,6 +285,9 @@ impl MaatClient {
         if !self.connected {
             return Err(MaatError::NotConnected);
         }
+        if !self.rate_limiter.allow() {
+            return Err(MaatError::RateLimitExceeded);
+        }
         let params = Self::build_params(Some(vec![(
             "page_id",
             serde_json::to_value(page_id).unwrap(),
@@ -259,6 +304,9 @@ impl MaatClient {
     pub async fn goto(&mut self, page_id: &str, url: &str) -> Result<ActionResult, MaatError> {
         if !self.connected {
             return Err(MaatError::NotConnected);
+        }
+        if !self.rate_limiter.allow() {
+            return Err(MaatError::RateLimitExceeded);
         }
         if !Security::is_valid_url(url) {
             return Err(MaatError::InvalidUrl {
@@ -282,6 +330,9 @@ impl MaatClient {
         if !self.connected {
             return Err(MaatError::NotConnected);
         }
+        if !self.rate_limiter.allow() {
+            return Err(MaatError::RateLimitExceeded);
+        }
         if !Security::is_valid_selector(&options.selector) {
             return Err(MaatError::InvalidSelector {
                 selector: options.selector.clone(),
@@ -299,6 +350,9 @@ impl MaatClient {
     pub async fn fill(&mut self, page_id: &str, options: &FillOptions) -> Result<ActionResult, MaatError> {
         if !self.connected {
             return Err(MaatError::NotConnected);
+        }
+        if !self.rate_limiter.allow() {
+            return Err(MaatError::RateLimitExceeded);
         }
         if !Security::is_valid_selector(&options.selector) {
             return Err(MaatError::InvalidSelector {
@@ -325,6 +379,9 @@ impl MaatClient {
         if !self.connected {
             return Err(MaatError::NotConnected);
         }
+        if !self.rate_limiter.allow() {
+            return Err(MaatError::RateLimitExceeded);
+        }
         if !Security::is_valid_key(&options.key) {
             return Err(MaatError::InvalidKey {
                 key: options.key.clone(),
@@ -347,6 +404,9 @@ impl MaatClient {
         if !self.connected {
             return Err(MaatError::NotConnected);
         }
+        if !self.rate_limiter.allow() {
+            return Err(MaatError::RateLimitExceeded);
+        }
         if !Security::is_valid_path(&options.path) {
             return Err(MaatError::InvalidPath {
                 path: options.path.clone(),
@@ -368,6 +428,9 @@ impl MaatClient {
     pub async fn title(&mut self, page_id: &str) -> Result<TitleResult, MaatError> {
         if !self.connected {
             return Err(MaatError::NotConnected);
+        }
+        if !self.rate_limiter.allow() {
+            return Err(MaatError::RateLimitExceeded);
         }
         let params = Self::build_params(Some(vec![(
             "page_id",

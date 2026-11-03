@@ -23,16 +23,39 @@ export class Security {
     ' ', '\t', '\n', '\r',
   };
 
+  /// Padrões de path traversal perigosos (após decodificação).
+  private static PathTraversalPatterns = ['../', '..\\', '..%2f', '..%5c', '..%252f', '..%255c'];
+
+  /// Decodifica percent-encoding incluindo duplo encoding.
+  private static decodePercentEncodingFull(input: string): string {
+    let decoded: string;
+    try {
+      decoded = decodeURIComponent(input);
+    } catch {
+      return input; // URL malformada, retorna original
+    }
+    // Se ainda houver % após decodificação, tenta novamente (duplo encoding)
+    if (decoded.includes('%')) {
+      try {
+        return decodeURIComponent(decoded);
+      } catch {
+        return decoded;
+      }
+    }
+    return decoded;
+  }
+
+  /// Verifica se o caminho contém padrões de path traversal.
+  private static containsPathTraversal(path: string): boolean {
+    const lower = path.toLowerCase();
+    return Security.PathTraversalPatterns.some(p => lower.includes(p));
+  }
+
   public static isValidUrl(url: string): boolean {
     if (!url || url.length === 0 || url.length > Security.MaxUrlLength) return false;
 
     // Decodifica percent-encoding antes de validar (previne bypass por encoding)
-    let decoded: string;
-    try {
-      decoded = decodeURIComponent(url);
-    } catch {
-      return false; // URL malformada
-    }
+    const decoded = Security.decodePercentEncodingFull(url);
 
     if (!decoded.startsWith('http://') && !decoded.startsWith('https://')) {
       return false;
@@ -94,8 +117,19 @@ export class Security {
 
   public static isValidPath(path: string): boolean {
     if (!path || path.length === 0 || path.length > Security.MaxUrlLength) return false;
-    if (path.includes('../')) return false;
-    if (path.startsWith('/')) return false;
+
+    // Decodifica percent-encoding para detectar path traversal ofuscado
+    const decoded = Security.decodePercentEncodingFull(path);
+
+    // Bloqueia path traversal (simples e ofuscado por encoding)
+    if (Security.containsPathTraversal(decoded)) return false;
+
+    // Bloqueia caminhos absolutos
+    if (decoded.startsWith('/') || decoded.startsWith('\\')) return false;
+
+    // Bloqueia links simbólicos e caminhos de unidade Windows
+    if (decoded.startsWith('~') || (decoded.length >= 2 && decoded[1] === ':')) return false;
+
     return true;
   }
 

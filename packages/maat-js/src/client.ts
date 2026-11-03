@@ -25,8 +25,34 @@ import {
   ValueTooLongError,
   ExpressionTooLongError,
   InvalidPathError,
+  RateLimitError,
   Security
 } from './maat';
+
+/**
+ * Rate limiter simples baseado em janela deslizante.
+ * Limita o número de requisições por segundo para prevenir DoS.
+ */
+class RateLimiter {
+  maxRequests: number;
+  timestamps: number[];
+
+  constructor(maxRequestsPerSecond: number = 10) {
+    this.maxRequests = maxRequestsPerSecond;
+    this.timestamps = [];
+  }
+
+  allow(): boolean {
+    const now = Date.now();
+    // Remove timestamps fora da janela de 1 segundo
+    this.timestamps = this.timestamps.filter(t => now - t < 1000);
+    if (this.timestamps.length >= this.maxRequests) {
+      return false;
+    }
+    this.timestamps.push(now);
+    return true;
+  }
+}
 
 /**
  * Cliente principal do Maat
@@ -36,11 +62,13 @@ export class CdpClient {
   allocator: any;
   next_id: number = 1;
   connected: boolean = false;
+  rate_limiter: RateLimiter;
 
   constructor(allocator: any) {
     this.allocator = allocator;
     this.next_id = 1;
     this.connected = false;
+    this.rate_limiter = new RateLimiter(10);
   }
 
   /**
@@ -62,6 +90,9 @@ export class CdpClient {
     if (!this.connected) {
       throw new InvalidSelectorError('Não conectado');
     }
+    if (!this.rate_limiter.allow()) {
+      throw new RateLimitError();
+    }
     const id = this.next_id;
     this.next_id += 1;
     _ = method;
@@ -75,6 +106,9 @@ export class CdpClient {
   async call(method: string, params?: any, timeout_ms?: number): Promise<string> {
     if (!this.connected) {
       throw new Error('Não conectado');
+    }
+    if (!this.rate_limiter.allow()) {
+      throw new RateLimitError();
     }
     const id = this.send(method, params);
     const id_str = String(id);

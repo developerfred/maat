@@ -33,6 +33,11 @@ var dangerousKeyChars = []rune{
 	'*', '!', '@', '#', '$', '%', '^', '+', '~', '`', '|', '\\',
 }
 
+// Padrões de path traversal perigosos (após decodificação).
+var pathTraversalPatterns = []string{
+	"../", "..\\", "..%2f", "..%5c", "..%252f", "..%255c",
+}
+
 func containsAny(s string, chars []rune) bool {
 	for _, c := range s {
 		for _, d := range chars {
@@ -44,6 +49,32 @@ func containsAny(s string, chars []rune) bool {
 	return false
 }
 
+func containsAnyPattern(s string, patterns []string) bool {
+	lower := strings.ToLower(s)
+	for _, p := range patterns {
+		if strings.Contains(lower, p) {
+			return true
+		}
+	}
+	return false
+}
+
+// decodePercentEncoding decodifica percent-encoding, incluindo duplo encoding.
+func decodePercentEncoding(input string) string {
+	result, err := urlPercentDecode(input)
+	if err != nil {
+		return input
+	}
+	// Se ainda houver % após decodificação, tenta novamente (duplo encoding)
+	if strings.Contains(result, "%") {
+		result2, err2 := urlPercentDecode(result)
+		if err2 == nil {
+			result = result2
+		}
+	}
+	return result
+}
+
 // IsValidURL valida uma URL (deve ser http/https, sem caracteres perigosos).
 func (s *Security) IsValidURL(url string) bool {
 	if url == "" || len(url) > MaxURLLength {
@@ -51,10 +82,7 @@ func (s *Security) IsValidURL(url string) bool {
 	}
 
 	// Decodifica percent-encoding antes de validar (previne bypass por encoding)
-	decoded, err := urlPercentDecode(url)
-	if err != nil {
-		return false // URL malformada
-	}
+	decoded := decodePercentEncoding(url)
 
 	if !strings.HasPrefix(decoded, "http://") && !strings.HasPrefix(decoded, "https://") {
 		return false
@@ -143,17 +171,31 @@ func (s *Security) IsValidValue(value string) bool {
 	return value != "" && len(value) <= MaxValueLength
 }
 
-// IsValidPath valida um caminho de arquivo (sem ../, não absoluto).
+// IsValidPath valida um caminho de arquivo (sem path traversal, não absoluto).
 func (s *Security) IsValidPath(path string) bool {
 	if path == "" || len(path) > MaxURLLength {
 		return false
 	}
-	if strings.Contains(path, "../") {
+
+	// Decodifica percent-encoding para detectar path traversal ofuscado
+	decoded := decodePercentEncoding(path)
+
+	// Bloqueia path traversal (simples e ofuscado por encoding)
+	if containsAnyPattern(decoded, pathTraversalPatterns) {
 		return false
 	}
-	if strings.HasPrefix(path, "/") {
+
+	// Bloqueia caminhos absolutos
+	if strings.HasPrefix(decoded, "/") || strings.HasPrefix(decoded, "\\") {
 		return false
 	}
+
+	// Bloqueia links simbólicos e caminhos de unidade Windows (C:)
+	if strings.HasPrefix(decoded, "~") ||
+		(len(decoded) >= 2 && decoded[1] == ':') {
+		return false
+	}
+
 	return true
 }
 

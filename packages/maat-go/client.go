@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 )
 
 // Request é a mensagem de requisição enviada ao servidor Maat.
@@ -20,20 +21,53 @@ type Response struct {
 	Error  json.RawMessage `json:"error,omitempty"`
 }
 
+// RateLimiter limita o número de requisições por segundo para prevenir DoS.
+type RateLimiter struct {
+	maxRequests int
+	timestamps  []time.Time
+}
+
+func NewRateLimiter(maxRequestsPerSecond int) *RateLimiter {
+	return &RateLimiter{
+		maxRequests: maxRequestsPerSecond,
+		timestamps:  []time.Time{},
+	}
+}
+
+func (r *RateLimiter) Allow() bool {
+	now := time.Now()
+	// Remove timestamps fora da janela de 1 segundo
+	var valid []time.Time
+	for _, t := range r.timestamps {
+		if now.Sub(t) < time.Second {
+			valid = append(valid, t)
+		}
+	}
+	r.timestamps = valid
+
+	if len(r.timestamps) >= r.maxRequests {
+		return false
+	}
+	r.timestamps = append(r.timestamps, now)
+	return true
+}
+
 // MaatClient é o cliente principal do Maat (Go).
 type MaatClient struct {
-	baseURL   string
-	nextID    uint64
-	connected bool
-	apiKey    string
+	baseURL      string
+	nextID       uint64
+	connected    bool
+	apiKey       string
+	rateLimiter  *RateLimiter
 }
 
 // NewMaatClient cria um cliente não conectado.
 func NewMaatClient() *MaatClient {
 	return &MaatClient{
-		nextID:    1,
-		connected: false,
-		apiKey:    "",
+		nextID:      1,
+		connected:   false,
+		apiKey:      "",
+		rateLimiter: NewRateLimiter(10),
 	}
 }
 
@@ -87,6 +121,9 @@ func (c *MaatClient) Launch(options LaunchOptions) (*LaunchResult, error) {
 	if !c.connected {
 		return nil, NewNotConnectedError()
 	}
+	if !c.rateLimiter.Allow() {
+		return nil, NewRateLimitError()
+	}
 	if options.Security != nil && options.Security.Sandbox {
 		// sandbox ativo por padrão; o servidor Zig aplica
 	}
@@ -120,6 +157,9 @@ func (c *MaatClient) CloseBrowser(browserID string) (*ActionResult, error) {
 	if !c.connected {
 		return nil, NewNotConnectedError()
 	}
+	if !c.rateLimiter.Allow() {
+		return nil, NewRateLimitError()
+	}
 	return nil, NewTransportError("WebSocket transport not yet bound to Maat Zig server")
 }
 
@@ -132,6 +172,9 @@ func (c *MaatClient) NewContext(browserID string, options BrowserContextOptions)
 	if !c.connected {
 		return nil, NewNotConnectedError()
 	}
+	if !c.rateLimiter.Allow() {
+		return nil, NewRateLimitError()
+	}
 	return nil, NewTransportError("WebSocket transport not yet bound to Maat Zig server")
 }
 
@@ -139,6 +182,9 @@ func (c *MaatClient) NewContext(browserID string, options BrowserContextOptions)
 func (c *MaatClient) NewPage(options PageOptions) (*PageResult, error) {
 	if !c.connected {
 		return nil, NewNotConnectedError()
+	}
+	if !c.rateLimiter.Allow() {
+		return nil, NewRateLimitError()
 	}
 	sec := &Security{}
 	if !sec.IsValidURL(options.URL) {
@@ -152,6 +198,9 @@ func (c *MaatClient) ClosePage(pageID string) (*ActionResult, error) {
 	if !c.connected {
 		return nil, NewNotConnectedError()
 	}
+	if !c.rateLimiter.Allow() {
+		return nil, NewRateLimitError()
+	}
 	return nil, NewTransportError("WebSocket transport not yet bound to Maat Zig server")
 }
 
@@ -163,6 +212,9 @@ func (c *MaatClient) ClosePage(pageID string) (*ActionResult, error) {
 func (c *MaatClient) Goto(pageID, url string) (*ActionResult, error) {
 	if !c.connected {
 		return nil, NewNotConnectedError()
+	}
+	if !c.rateLimiter.Allow() {
+		return nil, NewRateLimitError()
 	}
 	sec := &Security{}
 	if !sec.IsValidURL(url) {
@@ -176,6 +228,9 @@ func (c *MaatClient) Click(pageID string, options ClickOptions) (*ActionResult, 
 	if !c.connected {
 		return nil, NewNotConnectedError()
 	}
+	if !c.rateLimiter.Allow() {
+		return nil, NewRateLimitError()
+	}
 	sec := &Security{}
 	if !sec.IsValidSelector(options.Selector) {
 		return nil, NewInvalidSelectorError(options.Selector)
@@ -187,6 +242,9 @@ func (c *MaatClient) Click(pageID string, options ClickOptions) (*ActionResult, 
 func (c *MaatClient) Fill(pageID string, options FillOptions) (*ActionResult, error) {
 	if !c.connected {
 		return nil, NewNotConnectedError()
+	}
+	if !c.rateLimiter.Allow() {
+		return nil, NewRateLimitError()
 	}
 	sec := &Security{}
 	if !sec.IsValidSelector(options.Selector) {
@@ -203,6 +261,9 @@ func (c *MaatClient) Press(pageID string, options PressOptions) (*ActionResult, 
 	if !c.connected {
 		return nil, NewNotConnectedError()
 	}
+	if !c.rateLimiter.Allow() {
+		return nil, NewRateLimitError()
+	}
 	sec := &Security{}
 	if !sec.IsValidKey(options.Key) {
 		return nil, NewInvalidKeyError(options.Key)
@@ -215,6 +276,9 @@ func (c *MaatClient) Screenshot(pageID string, options ScreenshotOptions) (*Acti
 	if !c.connected {
 		return nil, NewNotConnectedError()
 	}
+	if !c.rateLimiter.Allow() {
+		return nil, NewRateLimitError()
+	}
 	sec := &Security{}
 	if !sec.IsValidPath(options.Path) {
 		return nil, NewInvalidPathError(options.Path)
@@ -226,6 +290,9 @@ func (c *MaatClient) Screenshot(pageID string, options ScreenshotOptions) (*Acti
 func (c *MaatClient) Title(pageID string) (*TitleResult, error) {
 	if !c.connected {
 		return nil, NewNotConnectedError()
+	}
+	if !c.rateLimiter.Allow() {
+		return nil, NewRateLimitError()
 	}
 	return nil, NewTransportError("WebSocket transport not yet bound to Maat Zig server")
 }

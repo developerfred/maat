@@ -27,6 +27,11 @@ impl Security {
         '*', '!', '@', '#', '$', '%', '^', '+', '~', '`', '|', '\\',
     ];
 
+    /// Padrões de path traversal perigosos (após decodificação).
+    const PATH_TRAVERSAL_PATTERNS: &'static [&'static str] = &[
+        "../", "..\\", "..%2f", "..%5c", "..%252f", "..%255c",
+    ];
+
     /// Valida uma URL (deve ser http/https, sem caracteres perigosos).
     pub fn is_valid_url(url: &str) -> bool {
         if url.is_empty() || url.len() > Self::MAX_URL_LENGTH {
@@ -64,6 +69,29 @@ impl Security {
             }
         }
         Ok(result)
+    }
+
+    /// Decodifica percent-encoding incluindo duplo encoding.
+    fn decode_percent_encoding_full(input: &str) -> String {
+        let decoded = match Self::url_percent_decode(input) {
+            Ok(d) => d,
+            Err(_) => return input.to_string(),
+        };
+        // Se ainda houver % após decodificação, tenta novamente (duplo encoding)
+        if decoded.contains('%') {
+            match Self::url_percent_decode(&decoded) {
+                Ok(d2) => d2,
+                Err(_) => decoded,
+            }
+        } else {
+            decoded
+        }
+    }
+
+    /// Verifica se o caminho contém padrões de path traversal.
+    fn contains_path_traversal(path: &str) -> bool {
+        let lower = path.to_lowercase();
+        Self::PATH_TRAVERSAL_PATTERNS.iter().any(|p| lower.contains(*p))
     }
 
     /// Valida um seletor CSS.
@@ -113,17 +141,30 @@ impl Security {
         !value.is_empty() && value.len() <= Self::MAX_VALUE_LENGTH
     }
 
-    /// Valida um caminho de arquivo (sem ../, não absoluto).
+    /// Valida um caminho de arquivo (sem path traversal, não absoluto).
     pub fn is_valid_path(path: &str) -> bool {
         if path.is_empty() || path.len() > Self::MAX_URL_LENGTH {
             return false;
         }
-        if path.contains("../") {
+
+        // Decodifica percent-encoding para detectar path traversal ofuscado
+        let decoded = Self::decode_percent_encoding_full(path);
+
+        // Bloqueia path traversal (simples e ofuscado por encoding)
+        if Self::contains_path_traversal(&decoded) {
             return false;
         }
-        if path.starts_with('/') {
+
+        // Bloqueia caminhos absolutos
+        if decoded.starts_with('/') || decoded.starts_with('\\') {
             return false;
         }
+
+        // Bloqueia links simbólicos e caminhos de unidade Windows
+        if decoded.starts_with('~') || (decoded.len() >= 2 && decoded.as_bytes()[1] == b':') {
+            return false;
+        }
+
         true
     }
 
@@ -161,5 +202,13 @@ mod tests {
         assert!(Security::is_valid_path("screenshot.png"));
         assert!(!Security::is_valid_path("../etc/passwd"));
         assert!(!Security::is_valid_path("/abs/path"));
+        // Path traversal ofuscado por encoding
+        assert!(!Security::is_valid_path("..%2fetc/passwd"));
+        assert!(!Security::is_valid_path("..%5cetc/passwd"));
+        assert!(!Security::is_valid_path("..%252fetc/passwd"));
+        // Caminho absoluto Windows
+        assert!(!Security::is_valid_path("C:\\Windows\\System32"));
+        // Link simbólico
+        assert!(!Security::is_valid_path("~/.ssh/id_rsa"));
     }
 }
