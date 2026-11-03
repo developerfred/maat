@@ -18,7 +18,7 @@ class Security:
         "<>\"'&;|`$(){}[]\\#%+!@*~"
     )
     DANGEROUS_SELECTOR_CHARS = frozenset(
-        "<>\"'&;(){}[]*!@#$%^+~`|\\.-#_-:"
+        "<>\"'&;(){}[]*!@#$%^+~`|\\ \t\n\r"
     )
     DANGEROUS_KEY_CHARS = frozenset(
         "<>\"'&;(){}[]*!@#$%^+~`|\\ \t\n\r"
@@ -28,9 +28,17 @@ class Security:
     def is_valid_url(cls, url: str) -> bool:
         if not url or len(url) > cls.MAX_URL_LENGTH:
             return False
-        if not (url.startswith("http://") or url.startswith("https://")):
+
+        # Decodifica percent-encoding antes de validar (previne bypass por encoding)
+        try:
+            from urllib.parse import unquote
+            decoded = unquote(url)
+        except Exception:
+            return False  # URL malformada
+
+        if not (decoded.startswith("http://") or decoded.startswith("https://")):
             return False
-        return not any(c in url for c in cls.DANGEROUS_URL_CHARS)
+        return not any(c in decoded for c in cls.DANGEROUS_URL_CHARS)
 
     @classmethod
     def is_valid_selector(cls, selector: str) -> bool:

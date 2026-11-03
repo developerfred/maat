@@ -25,6 +25,7 @@ type MaatClient struct {
 	baseURL   string
 	nextID    uint64
 	connected bool
+	apiKey    string
 }
 
 // NewMaatClient cria um cliente não conectado.
@@ -32,14 +33,21 @@ func NewMaatClient() *MaatClient {
 	return &MaatClient{
 		nextID:    1,
 		connected: false,
+		apiKey:    "",
 	}
 }
 
 // Connect conecta ao servidor Maat via WebSocket.
-func (c *MaatClient) Connect(host string, port int, path string) error {
-	c.baseURL = fmt.Sprintf("ws://%s:%d%s", host, port, path)
-	c.connected = true
-	return nil
+// api_key é uma chave de API opcional para autenticação (ativa WSS quando fornecida).
+func (c *MaatClient) Connect(host string, port int, path string, apiKey ...string) error {
+    scheme := "ws"
+    if len(apiKey) > 0 && apiKey[0] != "" {
+        scheme = "wss"
+        c.apiKey = apiKey[0]
+    }
+    c.baseURL = fmt.Sprintf("%s://%s:%d%s", scheme, host, port, path)
+    c.connected = true
+    return nil
 }
 
 // ConnectWS conecta usando uma URL WebSocket já resolvida.

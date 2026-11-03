@@ -19,7 +19,7 @@ impl Security {
     const DANGEROUS_SELECTOR_CHARS: &'static [char] = &[
         '<', '>', '"', '\'', '&', ';', '(', ')', '[', ']', '{', '}',
         '*', '!', '@', '#', '$', '%', '^', '+', '~', '`', '|', '\\',
-        '.', '#', '-', '_', ':',
+        ' ', '\t', '\n', '\r',
     ];
 
     const DANGEROUS_KEY_CHARS: &'static [char] = &[
@@ -32,10 +32,38 @@ impl Security {
         if url.is_empty() || url.len() > Self::MAX_URL_LENGTH {
             return false;
         }
-        if !url.starts_with("http://") && !url.starts_with("https://") {
+
+        // Decodifica percent-encoding antes de validar (previne bypass por encoding)
+        let decoded = match Self::url_percent_decode(url) {
+            Ok(d) => d,
+            Err(_) => return false, // URL malformada
+        };
+
+        if !decoded.starts_with("http://") && !decoded.starts_with("https://") {
             return false;
         }
-        !Self::DANGEROUS_URL_CHARS.iter().any(|c| url.contains(*c))
+
+        !Self::DANGEROUS_URL_CHARS.iter().any(|c| decoded.contains(*c))
+    }
+
+    /// Decodifica percent-encoding (URL-encoding) de uma string.
+    fn url_percent_decode(input: &str) -> Result<String, std::fmt::Error> {
+        let mut result = String::new();
+        let bytes = input.as_bytes();
+        let mut i = 0;
+        while i < bytes.len() {
+            if bytes[i] == b'%' && i + 2 < bytes.len() {
+                let hex = &bytes[i + 1..i + 3];
+                let val = u8::from_str_radix(std::str::from_utf8(hex).unwrap_or("00"), 16)
+                    .unwrap_or(0);
+                result.push(val as char);
+                i += 3;
+            } else {
+                result.push(bytes[i] as char);
+                i += 1;
+            }
+        }
+        Ok(result)
     }
 
     /// Valida um seletor CSS.

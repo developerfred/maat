@@ -161,7 +161,7 @@ async fn main() {
 async fn run(cli: Cli) -> Result<()> {
     let mut client = MaatClient::new();
     client
-        .connect(&cli.host, cli.port, &cli.path)
+        .connect(&cli.host, cli.port, &cli.path, None::<&str>)
         .await
         .map_err(|e| maat_rs::MaatError::Transport { detail: e.to_string() })?;
     info!("Conectado ao servidor Maat em {}:{}{}", cli.host, cli.port, cli.path);

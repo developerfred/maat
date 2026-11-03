@@ -15,7 +15,7 @@ export class Security {
 
   private static DangerousSelectorChars = ['<', '>', '"', '\'', '&', ';', '(', ')', '[', ']', '{', '}',
     '*', '!', '@', '#', '$', '%', '^', '+', '~', '`', '|', '\\',
-    '.', '#', '-', '_', ':'];
+    ' ', '\t', '\n', '\r'];
 
   private static DangerousKeyChars = &[_]u8{
     '<', '>', '"', '\'', '&', ';', '(', ')', '[', ']', '{', '}',
@@ -26,12 +26,20 @@ export class Security {
   public static isValidUrl(url: string): boolean {
     if (!url || url.length === 0 || url.length > Security.MaxUrlLength) return false;
 
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    // Decodifica percent-encoding antes de validar (previne bypass por encoding)
+    let decoded: string;
+    try {
+      decoded = decodeURIComponent(url);
+    } catch {
+      return false; // URL malformada
+    }
+
+    if (!decoded.startsWith('http://') && !decoded.startsWith('https://')) {
       return false;
     }
 
     for (const char of Security.DangerousUrlChars) {
-      if (url.includes(char)) return false;
+      if (decoded.includes(char)) return false;
     }
 
     return true;

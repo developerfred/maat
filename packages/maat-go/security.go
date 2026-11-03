@@ -1,6 +1,9 @@
 package maat
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 // Security fornece validações de entrada para prevenir injeções.
 // Espelha as regras do SDK JS para consistência entre linguagens.
@@ -22,7 +25,7 @@ var dangerousURLChars = []rune{
 var dangerousSelectorChars = []rune{
 	'<', '>', '"', '\'', '&', ';', '(', ')', '[', ']', '{', '}',
 	'*', '!', '@', '#', '$', '%', '^', '+', '~', '`', '|', '\\',
-	'.', '#', '-', '_', ':',
+	' ', '\t', '\n', '\r',
 }
 
 var dangerousKeyChars = []rune{
@@ -46,10 +49,46 @@ func (s *Security) IsValidURL(url string) bool {
 	if url == "" || len(url) > MaxURLLength {
 		return false
 	}
-	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+
+	// Decodifica percent-encoding antes de validar (previne bypass por encoding)
+	decoded, err := urlPercentDecode(url)
+	if err != nil {
+		return false // URL malformada
+	}
+
+	if !strings.HasPrefix(decoded, "http://") && !strings.HasPrefix(decoded, "https://") {
 		return false
 	}
-	return !containsAny(url, dangerousURLChars)
+	return !containsAny(decoded, dangerousURLChars)
+}
+
+// urlPercentDecode decodifica percent-encoding (URL-encoding) de uma string.
+func urlPercentDecode(input string) (string, error) {
+	var result strings.Builder
+	for i := 0; i < len(input); i++ {
+		if input[i] == '%' && i+2 < len(input) {
+			hex := input[i+1 : i+3]
+			var val byte
+			for _, c := range hex {
+				val <<= 4
+				ci := byte(c)
+				if ci >= '0' && ci <= '9' {
+					val += ci - '0'
+				} else if ci >= 'a' && ci <= 'f' {
+					val += ci - 'a' + 10
+				} else if ci >= 'A' && ci <= 'F' {
+					val += ci - 'A' + 10
+				} else {
+					return "", fmt.Errorf("caractere hex inválido: %c", c)
+				}
+			}
+			result.WriteByte(val)
+			i += 2
+		} else {
+			result.WriteByte(input[i])
+		}
+	}
+	return result.String(), nil
 }
 
 // IsValidSelector valida um seletor CSS.

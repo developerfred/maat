@@ -38,14 +38,17 @@ from .types import ActionResult, LaunchResult, PageResult, TitleResult
 class MaatClient:
     """Cliente principal do Maat."""
 
-    def __init__(self, base_url: Optional[str] = None) -> None:
+    def __init__(self, base_url: Optional[str] = None, api_key: Optional[str] = None) -> None:
         self.base_url = base_url
+        self._api_key = api_key
         self._next_id: int = 1
         self.connected: bool = False
 
-    async def connect(self, host: str, port: int, path: str = "/") -> None:
+    async def connect(self, host: str, port: int, path: str = "/", api_key: Optional[str] = None) -> None:
         """Conecta ao servidor Maat informando host, porta e caminho WebSocket."""
-        self.base_url = f"ws://{host}:{port}{path}"
+        scheme = "wss" if api_key else "ws"
+        self.base_url = f"{scheme}://{host}:{port}{path}"
+        self._api_key = api_key
         self.connected = True
 
     async def connect_ws(self, ws_url: str) -> None:

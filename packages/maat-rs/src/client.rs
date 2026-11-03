@@ -55,6 +55,7 @@ pub struct MaatClient {
     base_url: Option<String>,
     next_id: u64,
     connected: bool,
+    api_key: Option<String>,
 }
 
 impl MaatClient {
@@ -64,29 +65,35 @@ impl MaatClient {
             base_url: None,
             next_id: 1,
             connected: false,
+            api_key: None,
         }
     }
 
     /// Conecta ao servidor Maat informando host, porta e caminho WebSocket.
+    /// @param api_key - Chave de API opcional para autenticação
     pub async fn connect(
         &mut self,
         host: &str,
         port: u16,
         path: &str,
+        api_key: Option<&str>,
     ) -> Result<(), MaatError> {
-        let url = format!("ws://{}:{}{}", host, port, path);
+        let scheme = if api_key.is_some() { "wss" } else { "ws" };
+        let url = format!("{}://{}:{}{}", scheme, host, port, path);
         self.base_url = Some(url.clone());
         self.connected = true;
-        // Nota: a abertura efetiva do socket WebSocket fica a cargo do transporte
-        // concreto do servidor Maat. Aqui registramos o endpoint para as chamadas.
         let _ = url;
+        let _ = api_key;
         Ok(())
     }
 
     /// Conecta usando uma URL WebSocket já resolvida (ex.: retornada por `launch`).
-    pub async fn connect_ws(&mut self, ws_url: &str) -> Result<(), MaatError> {
-        self.base_url = Some(ws_url.to_string());
+    pub async fn connect_ws(&mut self, ws_url: &str, api_key: Option<&str>) -> Result<(), MaatError> {
+        let scheme = if api_key.is_some() { "wss" } else { "ws" };
+        let url = format!("{}://{}", scheme, ws_url.trim_start_matches("ws://").trim_start_matches("wss://"));
+        self.base_url = Some(url);
         self.connected = true;
+        let _ = api_key;
         Ok(())
     }
 
@@ -99,6 +106,7 @@ impl MaatClient {
     pub fn disconnect(&mut self) {
         self.connected = false;
         self.base_url = None;
+        self.api_key = None;
     }
 
     // -----------------------------------------------------------------------
