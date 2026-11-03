@@ -1,86 +1,101 @@
 # Maat
 
-**Maat** é um framework de automação de navegadores escrito em **Zig**, inspirado no Playwright, com foco em **segurança de memória** e **sandbox ligado por padrão**.
+**Maat** is a Playwright-like browser automation framework written in **Zig**, focused on **memory safety** and **sandbox enabled by default**.
 
-## Por que Maat?
+## Why Maat?
 
-Na mitologia egípcia, Maat é a deusa da verdade, da ordem e da justiça. Para automação de navegadores, isso significa:
+In Egyptian mythology, Maat is the goddess of truth, order, and justice. For browser automation, this means:
 
-- **Ordem**: uma API unificada e previsível para qualquer navegador.
-- **Verdade**: testes determinísticos e confiáveis.
-- **Justiça/Proteção**: **sandbox ativo por padrão**, diferentemente do Playwright que frequentemente roda com `--no-sandbox` em CI.
+- **Order**: a unified and predictable API for any browser.
+- **Truth**: deterministic and reliable tests.
+- **Justice/Protection**: **sandbox enabled by default**, unlike Playwright which often runs with `--no-sandbox` in CI.
 
-## Escopo
+## Scope
 
-Maat **não reimplementa motores de navegador**. Ele orquestra navegadores reais já instalados no sistema (Chromium, Firefox, WebKit/Safari) através de seus protocolos de automação nativos (CDP, WebDriver BiDi, etc.), enquanto a camada de controle, rede e protocolo fica em **Zig**, aproveitando a segurança de memória da linguagem.
+Maat **does not reimplement browser engines**. It orchestrates real browsers already installed on the system (Chromium, Firefox, WebKit/Safari) through their native automation protocols (CDP, WebDriver BiDi, etc.), while the control, network, and protocol layer is written in **Zig**, leveraging the language's memory safety.
 
-## Navegadores suportados (planejado)
+## Supported Browsers (planned)
 
-| Navegador | Protocolo | Status |
+| Browser | Protocol | Status |
 |-----------|-----------|--------|
-| Chromium / Chrome | Chrome DevTools Protocol (CDP) | Em desenvolvimento |
-| Firefox | WebDriver BiDi / Marionette | Planejado |
-| WebKit / Safari | WebDriver / Remote Debugging | Planejado |
+| Chromium / Chrome | Chrome DevTools Protocol (CDP) | In development |
+| Firefox | WebDriver BiDi / Marionette | Planned |
+| WebKit / Safari | WebDriver / Remote Debugging | Planned |
 
-## Requisitos
+## Requirements
 
 - Zig 0.17.0+
-- Um navegador instalado no sistema
+- A browser installed on the system
 
-## Build e execução
+## Build and Run
 
 ```sh
-zig build            # compila a biblioteca e o exemplo
-zig build run        # executa o exemplo
+zig build            # compiles library and example
+zig build run        # runs the example
+zig build test       # runs tests
+zig build graph-example  # runs agent communication graph example
+zig build full-example   # runs complete Browser + Page example
 ```
 
-## Exemplo de uso
+## Usage Example
 
 ```zig
+const std = @import("std");
 const maat = @import("maat");
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
+    const allocator = std.heap.page_allocator;
 
-    // Sandbox ligado por padrão
-    const browser = try maat.Browser.launch(allocator, .{
+    // Sandbox enabled by default
+    var browser = try maat.Browser.launch(allocator, .{
         .name = maat.BrowserName.chromium,
         .headless = false,
-        .sandbox = true,
+        .security = .{ .sandbox = true },
     });
     defer browser.close();
 
-    const page = try browser.newPage();
+    var page = try browser.newPage();
     defer page.close();
 
-    try page.goto("https://example.com");
-    try page.screenshot("exemplo.png");
+    try page.goto("https://example.com", maat.WaitUntil.load);
+    try page.screenshot("example.png");
 
-    std.debug.print("Título: {s}\n", .{try page.title()});
+    std.debug.print("Title: {s}\n", .{try page.title()});
 }
 ```
 
-## Segurança e sandbox
+## Security and Sandbox
 
-Por padrão **o sandbox está ativo**. Se você precisar desativá-lo (somente em ambientes isolados e confiáveis), passe `.sandbox = false`. Isso recria exatamente o comportamento inseguro do Playwright padrão e **não é recomendado para produção**.
+**Sandbox is enabled by default**. If you need to disable it (only in isolated, trusted environments), pass `.security = .{ .sandbox = false }`. This recreates exactly the insecure Playwright default behavior and is **not recommended for production**.
 
-As vulnerabilidades citadas (CVE-2026-118306, CVE-2026-118331, CVE-2026-118348, CVE-2026-118344) afetam o ecossistema Playwright/navegador. Reimplementar a orquestração em Zig reduz a superfície de ataque escrita em linguagens inseguras, mas **não remove vulnerabilidades intrínsecas ao motor do navegador**. Mantenha os navegadores atualizados.
+The cited CVEs (CVE-2026-118306, CVE-2026-118331, CVE-2026-118348, CVE-2026-118344) affect the Playwright/browser ecosystem. Reimplementing the orchestration layer in Zig reduces the attack surface written in unsafe languages, but **does not remove vulnerabilities intrinsic to the browser engine**. Keep your browsers updated.
 
-## Planejamento e issues
+## Issues and Planning
 
-Toda funcionalidade é rastreada como **issue no GitHub**, sem datas, e desenvolvida em **worktree separado** com **pull request**. Veja [`ISSUES_PLANEJADAS.md`](ISSUES_PLANEJADAS.md) para a lista completa.
+All functionality is tracked as **GitHub issues** (no dates) and developed in **separate worktrees** with **pull requests**. See [`ISSUES_PLANEJADAS.md`](ISSUES_PLANEJADAS.md) for the complete list.
 
-## Fluxo de trabalho
+## Workflow
 
-Cada issue é desenvolvida assim:
+Each issue is developed as follows:
 
-1. Criar uma **issue** no GitHub (sem data).
-2. Criar um **worktree** em branch dedicada: `git worktree add ../maat-<issue> -b issue-<numero>-<slug>`
-3. Implementar, testar e commitar no worktree.
-4. Abrir um **pull request** para `main`.
-5. Após merge, remover o worktree.
+1. Create a **issue** on GitHub (no date).
+2. Create a **worktree** in a dedicated branch: `git worktree add ../maat-<issue> -b issue-<number>-<slug>`
+3. Implement, test, and commit in the worktree.
+4. Open a **pull request** to `main`.
+5. After merge, remove the worktree.
 
-## Licença
+## Agent Skills
+
+See `AGENT_SKILL_ISSUES.md`, `AGENT_SKILL_ZIG_BUILD.md`, and `AGENT_SKILL_WORKFLOW.md` for AI agent guidance on working with this project.
+
+## Zig Compatibility
+
+See `ZIG_COMPAT_SKILL.md` for compatibility information across Zig versions (0.11 → master).
+
+## API Reference
+
+See `API_REFERENCE.md` for complete API documentation.
+
+## License
 
 MIT
