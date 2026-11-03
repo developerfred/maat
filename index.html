@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAAT — Browser Automation in Zig</title>
+    <meta name="description" content="Maat is a Playwright-like browser automation framework written in Zig. Memory-safe, sandbox enabled by default, multi-browser support (Chromium, Firefox, WebKit). Secure alternative to Playwright for CVEs CVE-2026-118306, CVE-2026-118331, CVE-2026-118348, CVE-2026-118344.">
+    <meta name="keywords" content="Maat, Zig, Playwright, browser automation, sandbox, CDP, Chromium, Firefox, WebKit, security, CVE, memory-safe">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://developerfred.github.io/maat/">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Courier New', 'Courier', monospace;
+            background: #ffffff;
+            color: #000000;
+            line-height: 1.4;
+        }
+
+        /* Brutalist Swiss grid */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Navigation */
+        nav {
+            border-top: 4px solid #000000;
+            border-bottom: 4px solid #000000;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            background: #ffffff;
+            z-index: 100;
+        }
+
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-size: 0.85rem;
+        }
+
+        nav a {
+            color: #000000;
+            text-decoration: none;
+            border: 2px solid #000000;
+            padding: 0.4rem 0.8rem;
+            transition: all 0.1s ease;
+        }
+
+        nav a:hover {
+            background: #000000;
+            color: #ffffff;
+        }
+
+        /* Hero */
+        .hero {
+            border: 6px solid #000000;
+            padding: 3rem 2rem;
+            margin: 2rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                #000000 2px,
+                #000000 4px
+            );
+            opacity: 0.1;
+            pointer-events: none;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero h1 {
+            font-size: 5rem;
+            font-weight: 900;
+            line-height: 1;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+        }
+
+        .hero h1 .accent {
+            color: #ff0000;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            max-width: 60ch;
+        }
+
+        .btn {
+            display: inline-block;
+            background: #000000;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 1rem 2rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            border: 4px solid #000000;
+            transition: all 0.1s ease;
+        }
+
+        .btn:hover {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        .btn.outline {
+            background: transparent;
+            color: #000000;
+        }
+
+        .btn.outline:hover {
+            background: #000000;
+            color: #ffffff;
+        }
+
+        /* CVE badges */
+        .cve-strip {
+            display: flex;
+            gap: 1rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        .cve-badge {
+            border: 3px solid #000000;
+            padding: 0.6rem 1rem;
+            font-weight: 900;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            background: #ff0000;
+            color: #ffffff;
+        }
+
+        /* Features grid */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin: 4rem 0;
+        }
+
+        .feature {
+            border: 4px solid #000000;
+            padding: 2rem;
+            position: relative;
+            background: #f5f5f5;
+        }
+
+        .feature::before {
+            content: "";
+            position: absolute;
+            top: -1rem;
+            left: -1rem;
+            width: 2rem;
+            height: 2rem;
+            background: #ff0000;
+            border: 2px solid #000000;
+        }
+
+        .feature h3 {
+            font-size: 1.4rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature p {
+            font-size: 0.95rem;
+            color: #333333;
+        }
+
+        /* Code block */
+        .code-block {
+            border: 6px solid #000000;
+            background: #000000;
+            color: #00ff00;
+            padding: 2rem;
+            margin: 3rem 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .code-block::before {
+            content: ">_";
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 2rem;
+            opacity: 0.2;
+        }
+
+        .code-block code {
+            display: block;
+            white-space: pre;
+        }
+
+        .code-block .keyword { color: #ff00ff; }
+        .code-block .string { color: #00ffff; }
+        .code-block .comment { color: #888888; }
+        .code-block .func { color: #0000ff; }
+
+        /* Language switch */
+        .lang-switch {
+            text-align: center;
+            margin: 2rem 0;
+            border-top: 2px solid #000000;
+            border-bottom: 2px solid #000000;
+            padding: 1rem 0;
+        }
+
+        .lang-switch a {
+            color: #000000;
+            text-decoration: none;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin: 0 1rem;
+        }
+
+        .lang-switch a:hover {
+            color: #ff0000;
+        }
+
+        /* Portuguese section */
+        .pt-section {
+            border: 6px solid #000000;
+            margin: 4rem 0;
+            padding: 3rem 2rem;
+            background: #f5f5f5;
+        }
+
+        .pt-section h2 {
+            font-size: 3rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 6px solid #000000;
+            padding: 3rem 0;
+            margin-top: 4rem;
+        }
+
+        footer .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        footer a {
+            color: #000000;
+            text-decoration: none;
+            border: 2px solid #000000;
+            padding: 0.4rem 0.8rem;
+        }
+
+        footer a:hover {
+            background: #000000;
+            color: #ffffff;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 3rem;
+            }
+            .features {
+                grid-template-columns: 1fr;
+            }
+            .nav-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="container">
+            <a href="#" style="font-size: 1.2rem;">MAAT</a>
+            <div>
+                <a href="#features">Features</a>
+                <a href="#code">Code</a>
+                <a href="#security">Security</a>
+                <a href="#pt">Português</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <section class="hero">
+            <div class="hero-content">
+                <h1>MAAT <span class="accent">IN ZIG</span></h1>
+                <p>Playwright-like browser automation with <strong>sandbox enabled by default</strong>. Memory-safe, multi-browser, secure.</p>
+
+                <div class="cve-strip">
+                    <span class="cve-badge">CVE-2026-118306</span>
+                    <span class="cve-badge">CVE-2026-118331</span>
+                    <span class="cve-badge">CVE-2026-118348</span>
+                    <span class="cve-badge">CVE-2026-118344</span>
+                </div>
+
+                <a href="https://github.com/developerfred/maat" class="btn">GitHub Repository</a>
+                <a href="#features" class="btn outline">Features</a>
+            </div>
+        </section>
+
+        <div class="lang-switch">
+            <a href="#pt">Versão em Português</a>
+        </div>
+
+        <section id="features" class="features">
+            <div class="feature">
+                <h3>Zig Memory Safety</h3>
+                <p>Explicit memory management, integer overflow checks, no hidden control flow. Reduces memory corruption attack surface.</p>
+            </div>
+            <div class="feature">
+                <h3>Sandbox ON</h3>
+                <p>Unlike Playwright, Maat runs browsers with sandbox <strong>enabled by default</strong>. No <code>--no-sandbox</code> unless explicitly opted out.</p>
+            </div>
+            <div class="feature">
+                <h3>Multi-Browser</h3>
+                <p>Unified API for Chromium, Firefox, WebKit via native protocols (CDP, WebDriver BiDi, Remote Debugging).</p>
+            </div>
+        </section>
+
+        <section id="code">
+            <div class="code-block">
+                <code>
+<span class="comment">// Maat — Browser automation in Zig</span>
+<span class="keyword">const</span> maat = @import(<span class="string">"maat"</span>);
+
+<span class="keyword">pub</span> <span class="keyword">fn</span> main() !void {
+    <span class="keyword">var</span> gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    <span class="keyword">defer</span> _ = gpa.deinit();
+    <span class="keyword">const</span> allocator = gpa.allocator();
+
+    <span class="keyword">var</span> browser = try maat.Browser.launch(allocator, .{
+        .name = maat.BrowserName.chromium,
+        .headless = false,
+        .security = .{ .sandbox = <span class="keyword">true</span> },
+    });
+    <span class="keyword">defer</span> browser.close();
+
+    <span class="keyword">var</span> page = try browser.newPage();
+    <span class="keyword">defer</span> page.close();
+
+    try page.goto(<span class="string">"https://example.com"</span>, maat.WaitUntil.load);
+    try page.screenshot(<span class="string">"exemplo.png"</span>);
+
+    <span class="keyword">const</span> title = try page.title();
+    std.debug.print(<span class="string">"Title: {s}\n"</span>, .{title});
+}
+</code>
+            </div>
+        </section>
+
+        <section id="security">
+            <div class="hero" style="border-color: #ff0000;">
+                <div class="hero-content">
+                    <h2 style="font-size: 2.5rem; margin-bottom: 1rem;">Security</h2>
+                    <p>Maat addresses CVEs affecting the Playwright ecosystem by reimplementing the orchestration layer in Zig. Browser engine vulnerabilities remain, but the automation layer is memory-safe and sandboxed by default.</p>
+                    <p>Sandbox can be disabled only with explicit <code>.security = .{ .sandbox = false }</code> (trusted environments only).</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <section class="pt-section" id="pt">
+        <div class="container">
+            <h2>MAAT — Automação de Navegador em Zig</h2>
+            <p>Automação de navegador estilo Playwright com <strong>sandbox ativado por padrão</strong>. Memória segura, multi-navegador, seguro.</p>
+
+            <div class="cve-strip">
+                <span class="cve-badge">CVE-2026-118306</span>
+                <span class="cve-badge">CVE-2026-118331</span>
+                <span class="cve-badge">CVE-2026-118348</span>
+                <span class="cve-badge">CVE-2026-118344</span>
+            </div>
+
+            <a href="https://github.com/developerfred/maat" class="btn">Repositório no GitHub</a>
+
+            <div class="lang-switch" style="margin-top: 2rem;">
+                <a href="#features">English version</a>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div>MAAT — Built with Zig</div>
+            <div>
+                <a href="https://github.com/developerfred/maat">GitHub</a>
+                <a href="https://github.com/developerfred/maat/issues">Issues</a>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
