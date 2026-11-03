@@ -29,7 +29,7 @@ pub const ZigVersion = struct {
 /// em todas as versões, usamos uma heurística conservadora.
 pub const detectZigVersion = fn () ZigVersion {
     // Zig 0.17.0 é a versão alvo deste projeto
-    return .{ .major = 0, .minor = 17, .patch = 0, };
+    return .{ .major = 0, .minor = 17, .patch = 0 };
 };
 
 /// Wrapper unificado para adicionar um módulo no build.zig.

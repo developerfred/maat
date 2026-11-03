@@ -36,10 +36,18 @@ jobs:
 
       - name: Run example (skip if no browser)
         run: |
-          if command -v chromium-browser >/dev/null 2>&1 || command -v google-chrome >/dev/null 2>&1 || command -v chromium >/dev/null 2>&1; then
-            zig build run || true
+          if [ "$(uname)" = "Windows_NT" ]; then
+            if where chromium-browser >nul 2>&1 || where google-chrome >nul 2>&1 || where chromium >nul 2>&1; then
+              zig build run || true
+            else
+              echo "No Chromium found, skipping run example"
+            fi
           else
-            echo "No Chromium found, skipping run example"
+            if command -v chromium-browser >/dev/null 2>&1 || command -v google-chrome >/dev/null 2>&1 || command -v chromium >/dev/null 2>&1; then
+              zig build run || true
+            else
+              echo "No Chromium found, skipping run example"
+            fi
           fi
 
   build-compat:
