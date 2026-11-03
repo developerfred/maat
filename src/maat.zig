@@ -1,4 +1,5 @@
 const std = @import("std");
+const Io = std.Io;
 const options = @import("options");
 const browser = @import("browser");
 const page = @import("page");

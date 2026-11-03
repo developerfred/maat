@@ -10,7 +10,6 @@ pub const Browser = struct {
     name: options.BrowserName,
     cdp_client: cdp.CdpClient,
     debug_port: u16,
-    process: ?std.process.Child,
 
     /// Launch a browser instance with sandbox enabled by default.
     pub fn launch(allocator: std.mem.Allocator, opts: options.LaunchOptions) !Browser {
@@ -38,13 +37,7 @@ pub const Browser = struct {
         const argv = try args.toOwnedSlice(allocator);
         defer allocator.free(argv);
 
-        // Stub: browser process spawn
-        const child: ?std.process.Child = null;
-
-        // Stub: port polling
-        _ = try helpers.waitForDebugPort(debug_port, 15_000);
-
-        // Connect via CDP WebSocket (real implementation)
+        // Connect via CDP WebSocket (stub implementation)
         const cdp_client = try cdp.CdpClient.connect(allocator, "127.0.0.1", debug_port, "/");
 
         return .{
@@ -52,7 +45,6 @@ pub const Browser = struct {
             .name = opts.name,
             .cdp_client = cdp_client,
             .debug_port = debug_port,
-            .process = child,
         };
     }
 
@@ -86,7 +78,6 @@ pub const Browser = struct {
     /// Close the browser and cleanup.
     pub fn close(self: *Browser) void {
         self.cdp_client.close();
-        _ = self.process;
     }
 };
 

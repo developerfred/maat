@@ -22,6 +22,5 @@ pub fn resolveExecutable(opts: options.LaunchOptions) ![]const u8 {
 pub fn waitForDebugPort(port: u16, timeout_ms: u64) !void {
     _ = port;
     _ = timeout_ms;
-    // Real port polling needs std.Io instance (Zig 0.17 complexity).
     return;
 }
