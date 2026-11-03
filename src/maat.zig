@@ -7,8 +7,14 @@ pub const BrowserName = enum {
     webkit,
 };
 
+pub const AutomationProtocol = enum {
+    cdp,       // Chrome DevTools Protocol (Chromium)
+    webdriver, // WebDriver / BiDi (Firefox, WebKit)
+};
+
 pub const LaunchOptions = struct {
     name: BrowserName = .chromium,
+    protocol: AutomationProtocol = .cdp,
     headless: bool = true,
     sandbox: bool = true, // sandbox enabled by default
     args: [][]const u8 = &[_][]const u8{},
@@ -25,6 +31,8 @@ pub const Browser = struct {
 
     pub fn launch(allocator: std.mem.Allocator, opts: LaunchOptions) !Browser {
         const debug_port = try findFreePort();
+        const protocol = if (opts.protocol == .cdp) .cdp else defaultProtocolFor(opts.name);
+        _ = protocol;
         _ = resolveExecutable(opts) catch "google-chrome";
 
         var args = try std.ArrayList([]const u8).initCapacity(allocator, 8);
@@ -140,6 +148,14 @@ fn resolveExecutable(opts: LaunchOptions) ![]const u8 {
         .chromium => return "google-chrome",
         .firefox => return "firefox",
         .webkit => return "Safari",
+    }
+}
+
+fn defaultProtocolFor(name: BrowserName) AutomationProtocol {
+    switch (name) {
+        .chromium => return .cdp,
+        .firefox => return .webdriver,
+        .webkit => return .webdriver,
     }
 }
 
