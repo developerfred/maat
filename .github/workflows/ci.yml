@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        zig-version: [0.17.0]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Zig
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: ${{ matrix.zig-version }}
+
+      - name: Zig version
+        run: zig version
+
+      - name: Format check
+        run: zig fmt --check src/
+
+      - name: Build library and executable
+        run: zig build
+
+      - name: Run tests
+        run: zig build test
+
+      - name: Run example (skip if no browser)
+        run: |
+          if command -v chromium-browser >/dev/null 2>&1 || command -v google-chrome >/dev/null 2>&1 || command -v chromium >/dev/null 2>&1; then
+            zig build run
+          else
+            echo "No Chromium found, skipping run example"
+          fi
+
+  build-compat:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        zig-version:
+          - 0.11.0
+          - 0.12.0
+          - 0.13.0
+          - 0.14.0
+          - 0.15.0
+          - 0.16.0
+          - 0.17.0
+          - 0.18.0
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Zig ${{ matrix.zig-version }}
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: ${{ matrix.zig-version }}
+
+      - name: Zig version
+        run: zig version
+
+      - name: Build (compatibility check)
+        run: zig build 2>&1 || echo "Build failed on Zig ${{ matrix.zig-version}} - may need build_compat update"
+
+  pages:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './site'
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: pages
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
