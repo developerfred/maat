@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="index, follow">
+    <meta name="description" content="Exemplo de frontend para testar Maat - Playwright-like em Zig com sandbox ativo por padrão">
+    <meta name="keywords" content="Maat, Zig, Playwright, browser automation, frontend example, E2E test, sandbox">
+    <title>Maat Frontend Example — Teste E2E</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Courier New', 'Courier', monospace;
+            background: #ffffff;
+            color: #000000;
+            line-height: 1.6;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            border-top: 6px solid #000000;
+            border-bottom: 6px solid #000000;
+            padding: 2rem 0;
+            background: #f5f5f5;
+        }
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+        }
+        header h1 .accent { color: #ff0000; }
+        .status-bar {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: #f9f9f9;
+            border: 3px solid #000000;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+        .badge-ok { background: #00ff00; color: #000000; }
+        .badge-warn { background: #ffff00; color: #000000; }
+        .badge-error { background: #ff0000; color: #ffffff; }
+        .card {
+            border: 4px solid #000000;
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: #f9f9f9;
+        }
+        .card h3 {
+            font-size: 1.5rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #000000;
+            padding-bottom: 0.5rem;
+        }
+        .btn {
+            display: inline-block;
+            background: #000000;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 1rem 2rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            border: 3px solid #000000;
+            transition: all 0.1s ease;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .btn:hover { background: #ffffff; color: #000000; }
+        .btn.secondary { background: #ffffff; color: #000000; }
+        .btn.secondary:hover { background: #f0f0f0; }
+        .btn.disabled { background: #cccccc; color: #666666; cursor: not-allowed; }
+        .output {
+            background: #000000;
+            color: #00ff00;
+            padding: 1rem;
+            border: 3px solid #000000;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin-top: 1rem;
+        }
+        .output .log-line { margin: 0.25rem 0; }
+        .output .log-error { color: #ff0000; }
+        .output .log-success { color: #00ff00; }
+        .output .log-info { color: #00ffff; }
+        .form-group {
+            margin: 1rem 0;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 900;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #000000;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        .form-group select {
+            background: #ffffff;
+        }
+        .columns {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        .footer {
+            border-top: 6px solid #000000;
+            padding: 2rem 0;
+            margin-top: 4rem;
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Maat <span class="accent">Frontend Example</span></h1>
+            <p style="margin-top: 0.5rem; font-weight: 900; text-transform: uppercase; font-size: 0.9rem;">
+                Teste de ponta a ponta — Playwright-like em Zig com sandbox ativo por padrão
+            </p>
+        </div>
+
+        <div class="status-bar">
+            <div>Status do Sistema:</div>
+            <span class="status-badge badge-ok">Sandbox: ATIVO</span>
+            <span class="status-badge badge-warn">Navegador: Stub</span>
+            <span class="status-badge badge-warn">CDP WebSocket: Stub</span>
+            <span class="status-badge badge-ok">API Frontend: Ativo</span>
+            <span class="status-badge badge-ok">Zig: 0.17.0</span>
+        </div>
+
+        <div class="columns">
+            <div class="card">
+                <h3>1. Lançar Navegador</h3>
+                <div class="form-group">
+                    <label>Navegador</label>
+                    <select id="browserName">
+                        <option value="chromium">Chromium (CDP)</option>
+                        <option value="firefox">Firefox (WebDriver BiDi)</option>
+                        <option value="webkit">WebKit/Safari (WebDriver)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Headless</label>
+                    <select id="headless">
+                        <option value="true">Sim</option>
+                        <option value="false">Não</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Sandbox</label>
+                    <select id="sandbox">
+                        <option value="true">Ativo (padrão)</option>
+                        <option value="false">Desativado (não recomendado)</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="launchBrowser()">Launch Browser</button>
+                <button class="btn secondary" onclick="closeBrowser()" id="btnCloseBrowser" style="display:none;">Fechar Navegador</button>
+            </div>
+
+            <div class="card">
+                <h3>2. Operações de Página</h3>
+                <div class="form-group">
+                    <label>URL</label>
+                    <input type="url" id="pageUrl" value="https://example.com" placeholder="https://example.com">
+                </div>
+                <div class="form-group">
+                    <label>Wait Until</label>
+                    <select id="waitUntil">
+                        <option value="load">load</option>
+                        <option value="domcontentloaded">domcontentloaded</option>
+                        <option value="networkidle">networkidle</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="gotoPage()" id="btnGotoPage" disabled>Ir para URL</button>
+                <button class="btn" onclick="getTitle()" id="btnGetTitle" disabled>Obter Título</button>
+                <button class="btn" onclick="takeScreenshot()" id="btnScreenshot" disabled>Screenshot</button>
+            </div>
+
+            <div class="card">
+                <h3>3. Interações</h3>
+                <div class="form-group">
+                    <label>Seletor</label>
+                    <input type="text" id="selector" value="button.submit" placeholder="button.submit">
+                </div>
+                <div class="form-group">
+                    <label>Valor</label>
+                    <input type="text" id="inputValue" value="testuser" placeholder="texto para preencher">
+                </div>
+                <button class="btn" onclick="clickElement()" id="btnClick" disabled>Clique</button>
+                <button class="btn" onclick="fillElement()" id="btnFill" disabled>Preencher</button>
+                <button class="btn" onclick="pressKey()" id="btnPress" disabled>Pressionar Tecla</button>
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label>Tecla</label>
+                    <input type="text" id="keyValue" value="Enter" placeholder="Enter">
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>4. Contexto Isolado</h3>
+                <p>Cada contexto tem cookies, localStorage e sessionStorage isolados.</div>
+                <button class="btn" onclick="createContext()" id="btnNewContext">Novo Contexto</button>
+                <button class="btn" onclick="setCookie()" id="btnSetCookie" disabled>Definir Cookie</button>
+                <button class="btn" onclick="getCookies()" id="btnGetCookies" disabled>Obter Cookies</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Saída do Sistema</h3>
+            <div class="output" id="output">
+                <div class="log-line log-info">[Maat] Sistema inicializado.</div>
+                <div class="log-line log-info">[Maat] Sandbox: ATIVO por padrão.</div>
+                <div class="log-line log-warn">[Maat] Navegador: Stub (não conectado a navegador real).</div>
+                <div class="log-line log-info">[Maat] Pronto para comandos.</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Código Zig Gerado</h3>
+            <div class="output" id="zigCode">
+const maat = @import("maat");<br>
+pub fn main() !void {<br>
+&nbsp;&nbsp;var browser = try maat.Browser.launch(allocator, .{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;.name = maat.BrowserName.chromium,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;.headless = false,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;.security = .{ .sandbox = true },<br>
+&nbsp;&nbsp;});<br>
+&nbsp;&nbsp;defer browser.close();<br><br>
+&nbsp;&nbsp;var page = try browser.newPage();<br>
+&nbsp;&nbsp;defer page.close();<br><br>
+&nbsp;&nbsp;try page.goto("https://example.com", maat.WaitUntil.load);<br>
+&nbsp;&nbsp;try page.screenshot("resultado.png");<br>
+&nbsp;&nbsp;std.debug.print("Título: {s}\n", .{try page.title()});<br>
+}
+</div>
+        </div>
+    </div>
+
+    <script>
+        let browserRunning = false;
+        let contextCount = 0;
+        const output = document.getElementById('output');
+
+        function log(msg, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `log-line log-${type}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            output.appendChild(div);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function updateZigCode(browserName, headless, sandbox) {
+            const code = `const maat = @import("maat");\npub fn main() !void {\n    var browser = try maat.Browser.launch(allocator, .{\n        .name = maat.BrowserName.${browserName},\n        .headless = ${headless},\n        .security = .{ .sandbox = ${sandbox} },\n    });\n    defer browser.close();\n\n    var page = try browser.newPage();\n    defer page.close();\n\n    try page.goto("https://example.com", maat.WaitUntil.load);\n    try page.screenshot("resultado.png");\n    std.debug.print("Título: {s}\n", .{try page.title()});\n}`;
+            document.getElementById('zigCode').textContent = code;
+        }
+
+        function setButtons(enabled) {
+            const btns = ['btnGotoPage', 'btnGetTitle', 'btnScreenshot', 'btnClick', 'btnFill', 'btnPress', 'btnSetCookie', 'btnGetCookies'];
+            btns.forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) btn.disabled = !enabled;
+            });
+        }
+
+        async function launchBrowser() {
+            const btn = document.getElementById('launchBrowser');
+            btn.disabled = true;
+            btn.textContent = 'Lançando...';
+
+            const browserName = document.getElementById('browserName').value;
+            const headless = document.getElementById('headless').value;
+            const sandbox = document.getElementById('sandbox').value;
+
+            log(`Iniciando lançamento do ${browserName}...`, 'info');
+            updateZigCode(browserName, headless, sandbox);
+
+            // Simular lançamento (stub)
+            setTimeout(() => {
+                browserRunning = true;
+                btn.disabled = true;
+                btn.textContent = 'Navegador Rodando';
+                document.getElementById('btnCloseBrowser').style.display = 'inline-block';
+                setButtons(true);
+                log(`Navegador ${browserName} lançado com sucesso (sandbox: ${sandbox === 'true' ? 'ATIVO' : 'DESATIVADO'})`, 'success');
+                log('AVISO: Este é um stub. Navegador real não está conectado.', 'warn');
+            }, 1000);
+        }
+
+        async function closeBrowser() {
+            browserRunning = false;
+            setButtons(false);
+            document.getElementById('launchBrowser').disabled = false;
+            document.getElementById('launchBrowser').textContent = 'Launch Browser';
+            document.getElementById('btnCloseBrowser').style.display = 'none';
+            log('Navegador fechado.', 'info');
+        }
+
+        async function gotoPage() {
+            const url = document.getElementById('pageUrl').value;
+            const wait = document.getElementById('waitUntil').value;
+            log(`Navegando para ${url} (waitUntil: ${wait})...`, 'info');
+            setTimeout(() => {
+                log(`Carregamento concluído: ${url}`, 'success');
+            }, 800);
+        }
+
+        async function getTitle() {
+            log('Obtendo título da página...', 'info');
+            setTimeout(() => {
+                log('Título: Exemplo de Página (stub)', 'success');
+            }, 500);
+        }
+
+        async function takeScreenshot() {
+            log('Capturando screenshot...', 'info');
+            setTimeout(() => {
+                log('Screenshot salvo: resultado.png', 'success');
+            }, 600);
+        }
+
+        async function clickElement() {
+            const selector = document.getElementById('selector').value;
+            log(`Clicando em: ${selector}`, 'info');
+            setTimeout(() => {
+                log(`Clique realizado em: ${selector}`, 'success');
+            }, 400);
+        }
+
+        async function fillElement() {
+            const selector = document.getElementById('selector').value;
+            const value = document.getElementById('inputValue').value;
+            log(`Preenchendo ${selector} com: ${value}`, 'info');
+            setTimeout(() => {
+                log(`Campo preenchido: ${selector} = ${value}`, 'success');
+            }, 400);
+        }
+
+        async function pressKey() {
+            const key = document.getElementById('keyValue').value;
+            log(`Pressionando tecla: ${key}`, 'info');
+            setTimeout(() => {
+                log(`Tecla pressionada: ${key}`, 'success');
+            }, 300);
+        }
+
+        async function createContext() {
+            contextCount++;
+            log(`Criando contexto isolado #${contextCount}...`, 'info');
+            setTimeout(() => {
+                document.getElementById('btnSetCookie').disabled = false;
+                document.getElementById('btnGetCookies').disabled = false;
+                log(`Contexto #${contextCount} criado com isolamento de cookies/storage`, 'success');
+            }, 500);
+        }
+
+        async function setCookie() {
+            const name = 'session_id';
+            const value = 'test_' + Date.now();
+            log(`Definindo cookie: ${name}=${value}...`, 'info');
+            setTimeout(() => {
+                log(`Cookie definido: ${name}=${value}`, 'success');
+            }, 400);
+        }
+
+        async function getCookies() {
+            log('Obtendo cookies do contexto...', 'info');
+            setTimeout(() => {
+                log('Cookies: session_id=test_12345 (stub)', 'success');
+            }, 400);
+        }
+    </script>
+</body>
+</html>
