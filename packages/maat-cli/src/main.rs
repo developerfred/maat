@@ -159,6 +159,13 @@ async fn main() {
 }
 
 async fn run(cli: Cli) -> Result<()> {
+    // Prevenção de SSRF: rejeitar hosts privados/internos
+    if is_private_host(&cli.host) {
+        return Err(maat_rs::MaatError::Other {
+            message: format!("Host '{}' não permitido (endereço privado/interno)", cli.host),
+        });
+    }
+
     let mut client = MaatClient::new();
     client
         .connect(&cli.host, cli.port, &cli.path, None::<&str>)
@@ -279,4 +286,25 @@ fn parse_wait_until(value: &str) -> Result<WaitUntil> {
             message: format!("wait_until não suportado: {}", value),
         }),
     }
+}
+
+/// Verifica se um host é um endereço privado/interno (prevenção de SSRF).
+/// Retorna true se o host for privado e deve ser rejeitado.
+fn is_private_host(host: &str) -> bool {
+    // Localhost sempre é privado
+    if host == "localhost" || host == "127.0.0.1" || host == "::1" {
+        return true;
+    }
+    // Tenta parsear como IP
+    if let Ok(ip) = host.parse::<std::net::IpAddr>() {
+        match ip {
+            std::net::IpAddr::V4(ipv4) => return ipv4.is_private() || ipv4.is_loopback(),
+            std::net::IpAddr::V6(ipv6) => return ipv6.is_loopback(),
+        }
+    }
+    // Nomes de domínio terminados em .local, .internal, .corp são privados
+    if host.ends_with(".local") || host.ends_with(".internal") || host.ends_with(".corp") {
+        return true;
+    }
+    false
 }
