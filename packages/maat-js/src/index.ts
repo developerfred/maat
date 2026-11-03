@@ -38,5 +38,6 @@ export {
   InvalidKeyError,
   ValueTooLongError,
   ExpressionTooLongError,
-  InvalidPathError
+  InvalidPathError,
+  RateLimitError
 } from './types';

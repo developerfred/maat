@@ -105,3 +105,10 @@ export class InvalidPathError extends MaatError {
     this.name = 'InvalidPathError';
   }
 }
+
+export class RateLimitError extends MaatError {
+  constructor() {
+    super('Limite de taxa excedido. Tente novamente em alguns segundos.', 'RATE_LIMIT_EXCEEDED');
+    this.name = 'RateLimitError';
+  }
+}
