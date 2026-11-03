@@ -6,6 +6,8 @@ comandos para o navegador. Espelha as regras do SDK JS para consistência.
 
 from __future__ import annotations
 
+from urllib.parse import unquote
+
 
 class Security:
     MAX_URL_LENGTH = 2048
@@ -24,17 +26,36 @@ class Security:
         "<>\"'&;(){}[]*!@#$%^+~`|\\ \t\n\r"
     )
 
+    # Padrões de path traversal perigosos (após decodificação)
+    PATH_TRAVERSAL_PATTERNS = frozenset(
+        "../", "..\\", "..%2f", "..%5c", "..%252f", "..%255c"
+    )
+
+    @classmethod
+    def _decode_percent_encoding(cls, value: str) -> str:
+        """Decodifica percent-encoding, incluindo duplo encoding."""
+        try:
+            decoded = unquote(value)
+            # Se ainda houver % após decodificação, tenta novamente (duplo encoding)
+            if "%" in decoded:
+                decoded = unquote(decoded)
+            return decoded
+        except Exception:
+            return value
+
+    @classmethod
+    def _contains_path_traversal(cls, path: str) -> bool:
+        """Verifica se o caminho contém padrões de path traversal."""
+        lower = path.lower()
+        return any(p in lower for p in cls.PATH_TRAVERSAL_PATTERNS)
+
     @classmethod
     def is_valid_url(cls, url: str) -> bool:
         if not url or len(url) > cls.MAX_URL_LENGTH:
             return False
 
         # Decodifica percent-encoding antes de validar (previne bypass por encoding)
-        try:
-            from urllib.parse import unquote
-            decoded = unquote(url)
-        except Exception:
-            return False  # URL malformada
+        decoded = cls._decode_percent_encoding(url)
 
         if not (decoded.startswith("http://") or decoded.startswith("https://")):
             return False
@@ -80,10 +101,22 @@ class Security:
     def is_valid_path(cls, path: str) -> bool:
         if not path or len(path) > cls.MAX_URL_LENGTH:
             return False
-        if "../" in path:
+
+        # Decodifica percent-encoding para detectar path traversal ofuscado
+        decoded = cls._decode_percent_encoding(path)
+
+        # Bloqueia path traversal (simples e ofuscado por encoding)
+        if cls._contains_path_traversal(decoded):
             return False
-        if path.startswith("/"):
+
+        # Bloqueia caminhos absolutos
+        if decoded.startswith("/") or decoded.startswith("\\"):
             return False
+
+        # Bloqueia links simbólicos e caminhos de unidade Windows
+        if decoded.startswith("~") or len(decoded) >= 2 and decoded[1] == ":":
+            return False
+
         return True
 
     @classmethod

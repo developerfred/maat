@@ -7,6 +7,7 @@ Todas as entradas são validadas pelo módulo Security antes do envio.
 from __future__ import annotations
 
 import json
+import time
 from typing import Any, Dict, Optional
 
 import httpx
@@ -17,6 +18,7 @@ from .errors import (
     InvalidUrlError,
     MaatError,
     NotConnectedError,
+    RateLimitError,
     TransportError,
     ValueTooLongError,
 )
@@ -35,14 +37,41 @@ from .types import (
 from .types import ActionResult, LaunchResult, PageResult, TitleResult
 
 
+class RateLimiter:
+    """Rate limiter simples baseado em janela deslizante.
+
+    Limita o número de requisições por segundo para prevenir DoS.
+    """
+
+    def __init__(self, max_requests_per_second: int = 10) -> None:
+        self.max_requests_per_second = max_requests_per_second
+        self._timestamps: list[float] = []
+
+    def allow(self) -> bool:
+        """Retorna True se a requisição pode prosseguir, False se excedeu o limite."""
+        now = time.monotonic()
+        # Remove timestamps fora da janela de 1 segundo
+        self._timestamps = [t for t in self._timestamps if now - t < 1.0]
+        if len(self._timestamps) >= self.max_requests_per_second:
+            return False
+        self._timestamps.append(now)
+        return True
+
+
 class MaatClient:
     """Cliente principal do Maat."""
 
-    def __init__(self, base_url: Optional[str] = None, api_key: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        base_url: Optional[str] = None,
+        api_key: Optional[str] = None,
+        max_requests_per_second: int = 10,
+    ) -> None:
         self.base_url = base_url
         self._api_key = api_key
         self._next_id: int = 1
         self.connected: bool = False
+        self._rate_limiter = RateLimiter(max_requests_per_second)
 
     async def connect(self, host: str, port: int, path: str = "/", api_key: Optional[str] = None) -> None:
         """Conecta ao servidor Maat informando host, porta e caminho WebSocket."""
@@ -79,6 +108,8 @@ class MaatClient:
     async def launch(self, options: LaunchOptions) -> LaunchResult:
         if not self.connected:
             raise NotConnectedError()
+        if not self._rate_limiter.allow():
+            raise RateLimitError()
         if options.security and options.security.sandbox:
             pass  # sandbox ativo por padrão; o servidor Zig aplica
 
@@ -101,6 +132,8 @@ class MaatClient:
     async def close_browser(self, browser_id: str) -> ActionResult:
         if not self.connected:
             raise NotConnectedError()
+        if not self._rate_limiter.allow():
+            raise RateLimitError()
         raise TransportError("WebSocket transport not yet bound to Maat Zig server")
 
     # ------------------------------------------------------------------
@@ -112,11 +145,15 @@ class MaatClient:
     ) -> PageResult:
         if not self.connected:
             raise NotConnectedError()
+        if not self._rate_limiter.allow():
+            raise RateLimitError()
         raise TransportError("WebSocket transport not yet bound to Maat Zig server")
 
     async def new_page(self, options: PageOptions) -> PageResult:
         if not self.connected:
             raise NotConnectedError()
+        if not self._rate_limiter.allow():
+            raise RateLimitError()
         if not Security.is_valid_url(options.url):
             raise InvalidUrlError(options.url)
         raise TransportError("WebSocket transport not yet bound to Maat Zig server")
@@ -124,6 +161,8 @@ class MaatClient:
     async def close_page(self, page_id: str) -> ActionResult:
         if not self.connected:
             raise NotConnectedError()
+        if not self._rate_limiter.allow():
+            raise RateLimitError()
         raise TransportError("WebSocket transport not yet bound to Maat Zig server")
 
     # ------------------------------------------------------------------
@@ -133,6 +172,8 @@ class MaatClient:
     async def goto(self, page_id: str, url: str) -> ActionResult:
         if not self.connected:
             raise NotConnectedError()
+        if not self._rate_limiter.allow():
+            raise RateLimitError()
         if not Security.is_valid_url(url):
             raise InvalidUrlError(url)
         raise TransportError("WebSocket transport not yet bound to Maat Zig server")
@@ -140,6 +181,8 @@ class MaatClient:
     async def click(self, page_id: str, options: ClickOptions) -> ActionResult:
         if not self.connected:
             raise NotConnectedError()
+        if not self._rate_limiter.allow():
+            raise RateLimitError()
         if not Security.is_valid_selector(options.selector):
             raise InvalidSelectorError(options.selector)
         raise TransportError("WebSocket transport not yet bound to Maat Zig server")
@@ -147,6 +190,8 @@ class MaatClient:
     async def fill(self, page_id: str, options: FillOptions) -> ActionResult:
         if not self.connected:
             raise NotConnectedError()
+        if not self._rate_limiter.allow():
+            raise RateLimitError()
         if not Security.is_valid_selector(options.selector):
             raise InvalidSelectorError(options.selector)
         if not Security.is_valid_value(options.value):
@@ -156,6 +201,8 @@ class MaatClient:
     async def press(self, page_id: str, options: PressOptions) -> ActionResult:
         if not self.connected:
             raise NotConnectedError()
+        if not self._rate_limiter.allow():
+            raise RateLimitError()
         if not Security.is_valid_key(options.key):
             raise InvalidKeyError(options.key)
         raise TransportError("WebSocket transport not yet bound to Maat Zig server")
@@ -165,6 +212,8 @@ class MaatClient:
     ) -> ActionResult:
         if not self.connected:
             raise NotConnectedError()
+        if not self._rate_limiter.allow():
+            raise RateLimitError()
         if not Security.is_valid_path(options.path):
             raise InvalidPathError(options.path)
         raise TransportError("WebSocket transport not yet bound to Maat Zig server")
@@ -172,6 +221,8 @@ class MaatClient:
     async def title(self, page_id: str) -> TitleResult:
         if not self.connected:
             raise NotConnectedError()
+        if not self._rate_limiter.allow():
+            raise RateLimitError()
         raise TransportError("WebSocket transport not yet bound to Maat Zig server")
 
 

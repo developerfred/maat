@@ -114,6 +114,13 @@ class ServerError(MaatError):
         self.message = message
 
 
+class RateLimitError(MaatError):
+    code = "RATE_LIMIT_EXCEEDED"
+
+    def __init__(self):
+        super().__init__("Limite de taxa excedido. Tente novamente em alguns segundos.", self.code)
+
+
 __all__ = [
     "MaatError",
     "InvalidUrlError",
@@ -127,4 +134,5 @@ __all__ = [
     "TransportError",
     "InvalidResponseError",
     "ServerError",
+    "RateLimitError",
 ]
